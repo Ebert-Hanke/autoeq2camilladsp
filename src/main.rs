@@ -1,29 +1,50 @@
+mod configcreation;
+
+use clap::Parser;
 use scraper::{Html, Selector};
+
+#[derive(Parser, Debug)]
+#[clap(name = "AutoEq2CamillaDSP", version, author = "by m.ebert-hanke")]
+#[clap(about = "A simple tool to create a config for Henrik Enquist's CamillaDSP based on corrections from Jaako Pasanen's AutoEq.", long_about = None)]
+struct Args {
+    #[clap(short = 'p', long, value_name = "'your headphones'")]
+    headphone: String,
+}
 
 #[tokio::main]
 async fn main() -> Result<(), reqwest::Error> {
+    let args = Args::parse();
+
     let client = reqwest::Client::builder()
         .user_agent("autoeq_parser")
         .build()?;
+
+    // define github repository for AutoEq
     let base_url = "https://github.com";
     let repo_url = "/jaakkopasanen/AutoEq/blob/master/results/";
     let url = base_url.to_owned() + repo_url;
 
+    // scrape all links from the results overview page
     let link_results = collect_links(&client, &url).await?;
-    let query = "Moondrop Starfield";
-    let query_result = match_query(&link_results, query);
+    println!("Headphone: {}", args.headphone);
+
+    // filter for queried headphone
+    let query_result = match_query(&link_results, args.headphone.as_str());
     println!("Name:{}, Url:{}", &query_result.name, &query_result.url);
 
+    // filter for file with parametric eq data
     let query_url = base_url.to_owned() + &query_result.url;
     let query_links = collect_links(&client, &query_url).await?;
     let param_eq_query = "ParametricEQ.txt";
     let eq_result = match_query(&query_links, param_eq_query);
     println!("Name:{}, Url:{}", eq_result.name, eq_result.url);
 
+    // construct url for raw file and get it
     let eq_url =
         "https://raw.githubusercontent.com".to_owned() + &eq_result.url.replace("/blob", "");
     println!("{}", eq_url);
     let eq_file = client.get(eq_url).send().await?.text().await?;
+
     let mut data = eq_file.lines();
     let preamp_gain = data
         .next()
@@ -33,7 +54,7 @@ async fn main() -> Result<(), reqwest::Error> {
         .unwrap()
         .parse::<f32>()
         .unwrap();
-    let mut headphone_correction = CorrectionFilter::new(preamp_gain);
+    let mut headphone_correction = CorrectionFilterSet::new(preamp_gain);
     data.into_iter().skip(0).for_each(|line| {
         let filter = parse_filter_line(line);
         match filter {
@@ -51,13 +72,13 @@ async fn main() -> Result<(), reqwest::Error> {
 }
 
 #[derive(Debug)]
-struct CorrectionFilter {
+struct CorrectionFilterSet {
     gain: f32,
     eq_bands: Vec<PeakEq>,
 }
-impl CorrectionFilter {
-    fn new(gain: f32) -> CorrectionFilter {
-        CorrectionFilter {
+impl CorrectionFilterSet {
+    fn new(gain: f32) -> CorrectionFilterSet {
+        CorrectionFilterSet {
             gain,
             eq_bands: Vec::new(),
         }
@@ -107,7 +128,11 @@ async fn collect_links(
 }
 
 fn match_query(scraped_links: &[ScrapedLink], query: &str) -> ScrapedLink {
-    match scraped_links.iter().find(|link| link.name.contains(query)) {
+    match scraped_links.iter().find(|link| {
+        link.name
+            .to_lowercase()
+            .contains(query.to_lowercase().trim())
+    }) {
         Some(link) => link.clone(),
         _ => ScrapedLink::new("no link".to_string(), "no url".to_string()),
     }
