@@ -1,4 +1,5 @@
 mod configcreation;
+use configcreation::{format_eq_filters, write_yml_file, BiquadParameters};
 
 use clap::Parser;
 use scraper::{Html, Selector};
@@ -9,6 +10,81 @@ use scraper::{Html, Selector};
 struct Args {
     #[clap(short = 'p', long, value_name = "'your headphones'")]
     headphone: String,
+}
+
+#[derive(Debug)]
+pub struct CorrectionFilterSet {
+    gain: f32,
+    eq_bands: Vec<BiquadParameters>,
+}
+impl CorrectionFilterSet {
+    fn new(gain: f32) -> CorrectionFilterSet {
+        CorrectionFilterSet {
+            gain,
+            eq_bands: Vec::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+struct ScrapedLink {
+    name: String,
+    url: String,
+}
+impl ScrapedLink {
+    fn new(name: String, url: String) -> ScrapedLink {
+        ScrapedLink { name, url }
+    }
+}
+
+async fn collect_links(
+    client: &reqwest::Client,
+    url: &str,
+) -> Result<Vec<ScrapedLink>, reqwest::Error> {
+    let a_selector = Selector::parse("a").unwrap();
+    let raw_result = client.get(url).send().await?.text().await?;
+    let document = Html::parse_document(&raw_result);
+    let mut link_list: Vec<ScrapedLink> = Vec::new();
+    for element in document.select(&a_selector) {
+        let link_text = element.inner_html().to_string();
+        let link_url = match element.value().attr("href") {
+            Some(url) => url,
+            _ => "No Url found.",
+        };
+        let link = ScrapedLink::new(link_text, link_url.to_string());
+        link_list.push(link);
+    }
+    Ok(link_list)
+}
+
+fn match_query(scraped_links: &[ScrapedLink], query: &str) -> ScrapedLink {
+    match scraped_links.iter().find(|link| {
+        link.name
+            .to_lowercase()
+            .contains(query.to_lowercase().trim())
+    }) {
+        Some(link) => link.clone(),
+        _ => ScrapedLink::new("no link".to_string(), "no url".to_string()),
+    }
+}
+
+fn parse_filter_line(line: &str) -> Result<BiquadParameters, Box<dyn std::error::Error>> {
+    // println!("The Line:{}", line);
+    let mut split_line = line.split(' ');
+    let fc = split_line.nth(5);
+    let gain = split_line.nth(2);
+    let q = split_line.nth(2);
+    // println!("fc:{:?},gain:{:?},q:{:?}", fc, gain, q);
+    match (fc, gain, q) {
+        (Some(fc), Some(gain), Some(q)) => {
+            let fc: f32 = fc.parse()?;
+            let gain: f32 = gain.parse()?;
+            let q: f32 = q.parse()?;
+            let eq = BiquadParameters::new(fc, gain, q);
+            Ok(eq)
+        }
+        _ => panic!("The value could not be found."),
+    }
 }
 
 #[tokio::main]
@@ -68,91 +144,9 @@ async fn main() -> Result<(), reqwest::Error> {
     });
     println!("{:?}", headphone_correction);
 
+    let formatted = format_eq_filters(headphone_correction);
+
+    println!("{:?}", formatted);
+    write_yml_file(formatted);
     Ok(())
-}
-
-#[derive(Debug)]
-struct CorrectionFilterSet {
-    gain: f32,
-    eq_bands: Vec<PeakEq>,
-}
-impl CorrectionFilterSet {
-    fn new(gain: f32) -> CorrectionFilterSet {
-        CorrectionFilterSet {
-            gain,
-            eq_bands: Vec::new(),
-        }
-    }
-}
-#[derive(Debug)]
-struct PeakEq {
-    fc: f32,
-    gain: f32,
-    q: f32,
-}
-impl PeakEq {
-    fn new(fc: f32, gain: f32, q: f32) -> PeakEq {
-        PeakEq { fc, gain, q }
-    }
-}
-
-#[derive(Debug, Clone)]
-struct ScrapedLink {
-    name: String,
-    url: String,
-}
-impl ScrapedLink {
-    fn new(name: String, url: String) -> ScrapedLink {
-        ScrapedLink { name, url }
-    }
-}
-
-async fn collect_links(
-    client: &reqwest::Client,
-    url: &str,
-) -> Result<Vec<ScrapedLink>, reqwest::Error> {
-    let a_selector = Selector::parse("a").unwrap();
-    let raw_result = client.get(url).send().await?.text().await?;
-    let document = Html::parse_document(&raw_result);
-    let mut link_list: Vec<ScrapedLink> = Vec::new();
-    for element in document.select(&a_selector) {
-        let link_text = element.inner_html().to_string();
-        let link_url = match element.value().attr("href") {
-            Some(url) => url,
-            _ => "No Url found.",
-        };
-        let link = ScrapedLink::new(link_text, link_url.to_string());
-        link_list.push(link);
-    }
-    Ok(link_list)
-}
-
-fn match_query(scraped_links: &[ScrapedLink], query: &str) -> ScrapedLink {
-    match scraped_links.iter().find(|link| {
-        link.name
-            .to_lowercase()
-            .contains(query.to_lowercase().trim())
-    }) {
-        Some(link) => link.clone(),
-        _ => ScrapedLink::new("no link".to_string(), "no url".to_string()),
-    }
-}
-
-fn parse_filter_line(line: &str) -> Result<PeakEq, Box<dyn std::error::Error>> {
-    // println!("The Line:{}", line);
-    let mut split_line = line.split(' ');
-    let fc = split_line.nth(5);
-    let gain = split_line.nth(2);
-    let q = split_line.nth(2);
-    // println!("fc:{:?},gain:{:?},q:{:?}", fc, gain, q);
-    match (fc, gain, q) {
-        (Some(fc), Some(gain), Some(q)) => {
-            let fc: f32 = fc.parse()?;
-            let gain: f32 = gain.parse()?;
-            let q: f32 = q.parse()?;
-            let eq = PeakEq::new(fc, gain, q);
-            Ok(eq)
-        }
-        _ => panic!("The value could not be found."),
-    }
 }
