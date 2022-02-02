@@ -80,7 +80,7 @@ fn parse_filter_line(line: &str) -> Result<BiquadParameters, Box<dyn std::error:
             let fc: f32 = fc.parse()?;
             let gain: f32 = gain.parse()?;
             let q: f32 = q.parse()?;
-            let eq = BiquadParameters::new(fc, gain, q);
+            let eq = BiquadParameters::new(fc, q, gain);
             Ok(eq)
         }
         _ => panic!("The value could not be found."),
