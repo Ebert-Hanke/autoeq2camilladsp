@@ -8,9 +8,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = { version = "3.0", features = ["derive"] }
+# clap = { version = "3.0", features = ["derive"] }
 reqwest = "0.11"
 tokio = { version = "1.16", features = ["full"] }
 scraper = "0.12"
 serde = { version = "1.0", features = ["derive"]}
 serde_yaml = "0.8"
+dialoguer = "0.9"
+console = "0.15"
+indicatif = "0.16"

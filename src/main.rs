@@ -1,152 +1,114 @@
 mod configcreation;
-use configcreation::{format_eq_filters, write_yml_file, BiquadParameters};
+mod scraping;
 
-use clap::Parser;
-use scraper::{Html, Selector};
+use configcreation::{format_eq_filters, write_yml_file};
+use console::style;
+use dialoguer::{theme::ColorfulTheme, Input, Select};
+use indicatif::ProgressBar;
+use scraping::{
+    collect_links, filter_link_list, parse_filter_line, pick_url, CorrectionFilterSet, QueryResult,
+};
 
-#[derive(Parser, Debug)]
-#[clap(name = "AutoEq2CamillaDSP", version, author = "by m.ebert-hanke")]
-#[clap(about = "A simple tool to create a config for Henrik Enquist's CamillaDSP based on corrections from Jaako Pasanen's AutoEq.", long_about = None)]
-struct Args {
-    #[clap(short = 'p', long, value_name = "'your headphones'")]
-    headphone: String,
-}
-
-#[derive(Debug)]
-pub struct CorrectionFilterSet {
-    gain: f32,
-    eq_bands: Vec<BiquadParameters>,
-}
-impl CorrectionFilterSet {
-    fn new(gain: f32) -> CorrectionFilterSet {
-        CorrectionFilterSet {
-            gain,
-            eq_bands: Vec::new(),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-struct ScrapedLink {
-    name: String,
-    url: String,
-}
-impl ScrapedLink {
-    fn new(name: String, url: String) -> ScrapedLink {
-        ScrapedLink { name, url }
-    }
-}
-
-async fn collect_links(
-    client: &reqwest::Client,
-    url: &str,
-) -> Result<Vec<ScrapedLink>, reqwest::Error> {
-    let a_selector = Selector::parse("a").unwrap();
-    let raw_result = client.get(url).send().await?.text().await?;
-    let document = Html::parse_document(&raw_result);
-    let mut link_list: Vec<ScrapedLink> = Vec::new();
-    for element in document.select(&a_selector) {
-        let link_text = element.inner_html().to_string();
-        let link_url = match element.value().attr("href") {
-            Some(url) => url,
-            _ => "No Url found.",
-        };
-        let link = ScrapedLink::new(link_text, link_url.to_string());
-        link_list.push(link);
-    }
-    Ok(link_list)
-}
-
-fn match_query(scraped_links: &[ScrapedLink], query: &str) -> ScrapedLink {
-    match scraped_links.iter().find(|link| {
-        link.name
-            .to_lowercase()
-            .contains(query.to_lowercase().trim())
-    }) {
-        Some(link) => link.clone(),
-        _ => ScrapedLink::new("no link".to_string(), "no url".to_string()),
-    }
-}
-
-fn parse_filter_line(line: &str) -> Result<BiquadParameters, Box<dyn std::error::Error>> {
-    // println!("The Line:{}", line);
-    let mut split_line = line.split(' ');
-    let fc = split_line.nth(5);
-    let gain = split_line.nth(2);
-    let q = split_line.nth(2);
-    // println!("fc:{:?},gain:{:?},q:{:?}", fc, gain, q);
-    match (fc, gain, q) {
-        (Some(fc), Some(gain), Some(q)) => {
-            let fc: f32 = fc.parse()?;
-            let gain: f32 = gain.parse()?;
-            let q: f32 = q.parse()?;
-            let eq = BiquadParameters::new(fc, q, gain);
-            Ok(eq)
-        }
-        _ => panic!("The value could not be found."),
-    }
-}
+// url for Jaako Pasanen's AutoEq
+const GITHUB_URL: &str = "https://github.com";
+const REPO_URL: &str = "/jaakkopasanen/AutoEq/blob/master/results/";
+// query for ParametricEQ raw file
+const PARAM_EQ: &str = "ParametricEQ.txt";
 
 #[tokio::main]
 async fn main() -> Result<(), reqwest::Error> {
-    let args = Args::parse();
-
     let client = reqwest::Client::builder()
-        .user_agent("autoeq_parser")
+        .user_agent("AutoEq2CamillaDSP")
         .build()?;
+    let progress_bar = ProgressBar::new_spinner();
 
-    // define github repository for AutoEq
-    let base_url = "https://github.com";
-    let repo_url = "/jaakkopasanen/AutoEq/blob/master/results/";
-    let url = base_url.to_owned() + repo_url;
+    let welcome = "___Welcome to AutoEq2CamillaDSP___";
+    println!("{}", style(welcome).color256(55).on_black().bold());
 
-    // scrape all links from the results overview page
-    let link_results = collect_links(&client, &url).await?;
-    println!("Headphone: {}", args.headphone);
+    progress_bar.set_message("Loading Database...");
+    let url = GITHUB_URL.to_owned() + REPO_URL;
+    let database_result_list = collect_links(&client, &url).await?;
+    progress_bar.finish_with_message("...Database loaded.");
 
-    // filter for queried headphone
-    let query_result = match_query(&link_results, args.headphone.as_str());
-    println!("Name:{}, Url:{}", &query_result.name, &query_result.url);
-
-    // filter for file with parametric eq data
-    let query_url = base_url.to_owned() + &query_result.url;
-    let query_links = collect_links(&client, &query_url).await?;
-    let param_eq_query = "ParametricEQ.txt";
-    let eq_result = match_query(&query_links, param_eq_query);
-    println!("Name:{}, Url:{}", eq_result.name, eq_result.url);
-
-    // construct url for raw file and get it
-    let eq_url =
-        "https://raw.githubusercontent.com".to_owned() + &eq_result.url.replace("/blob", "");
-    println!("{}", eq_url);
-    let eq_file = client.get(eq_url).send().await?.text().await?;
-
-    let mut data = eq_file.lines();
-    let preamp_gain = data
-        .next()
-        .unwrap()
-        .split(' ')
-        .nth(1)
-        .unwrap()
-        .parse::<f32>()
+    let headphone_query: String = Input::with_theme(&ColorfulTheme::default())
+        .with_prompt("Which Headphones or IEMs do you want to EQ with AutoEq?")
+        .interact_text()
         .unwrap();
-    let mut headphone_correction = CorrectionFilterSet::new(preamp_gain);
-    data.into_iter().skip(0).for_each(|line| {
-        let filter = parse_filter_line(line);
-        match filter {
-            Ok(eq) => {
-                headphone_correction.eq_bands.push(eq);
-            }
-            Err(error) => {
-                panic!("{}", error);
+
+    let query_result_url = match filter_link_list(&database_result_list, &headphone_query) {
+        QueryResult::Success(url) => {
+            println!(
+                "Great! The {} could be found in the AutoEq database.",
+                headphone_query
+            );
+            url
+        }
+        QueryResult::Suggestions(mut suggestions) => {
+            suggestions.push("Nope, nothing here for me ...".to_string());
+            let selection = Select::with_theme(&ColorfulTheme::default())
+                .with_prompt("Maybe one of these is the one you are looking for?")
+                .default(0)
+                .items(&suggestions[..])
+                .interact()
+                .unwrap();
+            match filter_link_list(&database_result_list, &suggestions[selection]) {
+                QueryResult::Success(url) => url,
+                _ => std::process::exit(0),
             }
         }
-    });
-    println!("{:?}", headphone_correction);
+        QueryResult::NotFound => {
+            println!(
+                "Sorry the {} or something similar could not be found in the AutoEq database.",
+                headphone_query
+            );
+            std::process::exit(0);
+        }
+    };
 
-    let formatted = format_eq_filters(headphone_correction);
+    progress_bar.set_message("Loading EQ settings...");
+    let headphone_url = GITHUB_URL.to_owned() + &query_result_url;
+    let headphone_query_link_list = collect_links(&client, &headphone_url).await?;
+    match pick_url(headphone_query_link_list, PARAM_EQ) {
+        Some(url) => {
+            let eq_url =
+                "https://raw.githubusercontent.com".to_owned() + &url.1.replace("/blob", "");
+            let eq_file = client.get(eq_url).send().await?.text().await?;
+            progress_bar.finish_with_message("...EQ settings loaded.");
 
-    println!("{:?}", formatted);
-    write_yml_file(formatted);
+            progress_bar.set_message("Parsing AutoEq settings to CamillaDSP...");
+            let mut data = eq_file.lines();
+            let preamp_gain = data
+                .next()
+                .unwrap()
+                .split(' ')
+                .nth(1)
+                .unwrap()
+                .parse::<f32>()
+                .unwrap();
+            let mut headphone_correction = CorrectionFilterSet::new(preamp_gain);
+            data.into_iter().skip(0).for_each(|line| {
+                let filter = parse_filter_line(line);
+                match filter {
+                    Ok(eq) => {
+                        headphone_correction.eq_bands.push(eq);
+                    }
+                    Err(error) => {
+                        panic!("{}", error);
+                    }
+                }
+            });
+
+            let formatted = format_eq_filters(headphone_correction);
+
+            write_yml_file(formatted);
+            progress_bar.finish_with_message(
+                "...Your config for CamillaDSP was created successfully. Happy listening! :)",
+            );
+        }
+        None => {
+            progress_bar.finish_with_message("...Something went wrong unfortunately :(");
+        }
+    }
+
     Ok(())
 }
