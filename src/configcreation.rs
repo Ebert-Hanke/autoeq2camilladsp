@@ -1,6 +1,6 @@
-use crate::CorrectionFilterSet;
+use crate::scraping::CorrectionFilterSet;
 use serde::Serialize;
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, io::Write};
 
 #[derive(Debug, Serialize)]
 pub struct Configuration {
@@ -69,7 +69,7 @@ pub fn format_eq_filters(data: CorrectionFilterSet) -> Configuration {
         let name = format!("Correction_Eq_Band_{}", i);
         config
             .filters
-            .insert(name.clone(), Filter::Biquad { parameters: band });
+            .insert(name, Filter::Biquad { parameters: band });
     });
     let mut filter_names: Vec<String> = Vec::new();
     config.filters.iter().for_each(|(n, _)| {
@@ -89,11 +89,13 @@ pub fn format_eq_filters(data: CorrectionFilterSet) -> Configuration {
 }
 
 pub fn write_yml_file(filterset: Configuration) {
-    let file = std::fs::OpenOptions::new()
+    let mut file = std::fs::OpenOptions::new()
         .write(true)
         .create(true)
         .open("testfile.yml")
         .expect("Could not open file.");
-
-    serde_yaml::to_writer(file, &filterset).unwrap();
+    let devices = include_bytes!("devices.yml");
+    let serialized_yaml = serde_yaml::to_vec(&filterset).unwrap().split_off(4);
+    file.write_all(devices).unwrap();
+    file.write_all(&serialized_yaml).unwrap();
 }
