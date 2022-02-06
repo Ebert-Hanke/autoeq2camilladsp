@@ -34,10 +34,17 @@ pub struct BiquadParameters {
     freq: f32,
     q: f32,
     gain: f32,
+    #[serde(rename = "type")]
+    name: String,
 }
 impl BiquadParameters {
     pub fn new(freq: f32, q: f32, gain: f32) -> Self {
-        BiquadParameters { freq, q, gain }
+        BiquadParameters {
+            freq,
+            q,
+            gain,
+            name: "Peaking".to_string(),
+        }
     }
 }
 
@@ -88,11 +95,12 @@ pub fn format_eq_filters(data: CorrectionFilterSet) -> Configuration {
     config
 }
 
-pub fn write_yml_file(filterset: Configuration) {
+pub fn write_yml_file(filterset: Configuration, headphone_name: String) {
+    let filename = format!("{}-AutoEq.yml", headphone_name.replace(" ", "_"));
     let mut file = std::fs::OpenOptions::new()
         .write(true)
         .create(true)
-        .open("testfile.yml")
+        .open(filename)
         .expect("Could not open file.");
     let devices = include_bytes!("devices.yml");
     let serialized_yaml = serde_yaml::to_vec(&filterset).unwrap().split_off(4);

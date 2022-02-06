@@ -38,7 +38,7 @@ pub async fn collect_links(
 }
 
 pub enum QueryResult {
-    Success(String),
+    Success((String, String)),
     Suggestions(Vec<String>),
     NotFound,
 }
@@ -47,7 +47,7 @@ pub fn filter_link_list(link_list: &HashMap<String, String>, query: &str) -> Que
     match link_list.get(&query.to_lowercase()) {
         Some(url) => {
             println!("Great! The {} could be found in AutoEq.", query);
-            QueryResult::Success(url.to_string())
+            QueryResult::Success((query.to_string(), url.to_string()))
         }
         None => {
             let mut suggestions: Vec<String> = link_list.keys().cloned().collect();
