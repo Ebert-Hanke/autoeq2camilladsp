@@ -1,14 +1,16 @@
 [package]
-name = "autoeq-parser"
+name = "autoeq2camilladsp"
 version = "0.1.0"
 authors = ["Micha Ebert-Hanke <michael@ebert-hanke.de>"]
-description = "A simple CLI tool to generate CamillaDSP config form the autoeq repository"
+description = "a simple tool to generate a CamillaDSP config based on correction data from the AutoEq repository"
+readme = "README.md"
+repository = "https://github.com/Ebert-Hanke/autoeq2camilladsp/"
+license = "LICENSE"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# clap = { version = "3.0", features = ["derive"] }
 reqwest = "0.11"
 tokio = { version = "1.16", features = ["full"] }
 scraper = "0.12"
