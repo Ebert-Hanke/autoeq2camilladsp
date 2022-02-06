@@ -1,23 +1,58 @@
 use crate::{scraping::CorrectionFilterSet, DevicesFile};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, HashMap},
     fs::File,
     io::{Read, Write},
 };
 
 #[derive(Debug, Serialize)]
 pub struct Configuration {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    mixers: Option<HashMap<String, Mixer>>,
     filters: BTreeMap<String, Filter>,
     pipeline: Vec<PipelineStep>,
 }
 impl Configuration {
     fn new() -> Self {
         Configuration {
+            mixers: None,
             filters: BTreeMap::new(),
             pipeline: Vec::new(),
         }
     }
+}
+
+// #[derive(Debug, Serialize, Deserialize)]
+// pub struct Mixers {
+//     mixers: HashMap<String, Mixer>,
+// }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Mixer {
+    pub channels: MixerChannels,
+    pub mapping: Vec<MixerMapping>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MixerMapping {
+    pub dest: usize,
+    pub sources: Vec<MixerSource>,
+    pub mute: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MixerSource {
+    pub channel: usize,
+    pub gain: f32,
+    pub inverted: bool,
+    pub mute: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MixerChannels {
+    pub r#in: usize,
+    pub out: usize,
 }
 
 #[derive(Debug, Serialize)]
@@ -30,6 +65,7 @@ enum Filter {
 #[derive(Debug, Serialize)]
 #[serde(tag = "type")]
 enum PipelineStep {
+    Mixer { name: String },
     Filter { channel: usize, names: Vec<String> },
 }
 
@@ -70,6 +106,16 @@ impl GainParameters {
 
 pub fn format_eq_filters(data: CorrectionFilterSet) -> Configuration {
     let mut config = Configuration::new();
+
+    // crossfeed
+    let crossfeed = true;
+    if crossfeed {
+        let crossfeed_mixers: HashMap<String, Mixer> =
+            serde_yaml::from_slice(include_bytes!("crossfeed_mixer.yml")).unwrap();
+        config.mixers = Some(crossfeed_mixers);
+    }
+
+    // correction eq filters
     config.filters.insert(
         "01_Preamp_Gain".to_string(),
         Filter::Gain {
