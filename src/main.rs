@@ -35,11 +35,11 @@ async fn main() -> Result<(), reqwest::Error> {
         .interact_text()
         .unwrap();
 
-    let query_result_url = match filter_link_list(&database_result_list, &headphone_query) {
+    let query_result = match filter_link_list(&database_result_list, &headphone_query) {
         QueryResult::Success(url) => {
             println!(
                 "Great! The {} could be found in the AutoEq database.",
-                headphone_query
+                url.0
             );
             url
         }
@@ -66,14 +66,14 @@ async fn main() -> Result<(), reqwest::Error> {
     };
 
     progress_bar.set_message("Loading EQ settings...");
-    let headphone_url = GITHUB_URL.to_owned() + &query_result_url;
+    let headphone_url = GITHUB_URL.to_owned() + &query_result.1;
     let headphone_query_link_list = collect_links(&client, &headphone_url).await?;
+    progress_bar.finish_with_message("...EQ settings loaded.");
     match pick_url(headphone_query_link_list, PARAM_EQ) {
         Some(url) => {
             let eq_url =
                 "https://raw.githubusercontent.com".to_owned() + &url.1.replace("/blob", "");
             let eq_file = client.get(eq_url).send().await?.text().await?;
-            progress_bar.finish_with_message("...EQ settings loaded.");
 
             progress_bar.set_message("Parsing AutoEq settings to CamillaDSP...");
             let mut data = eq_file.lines();
@@ -100,7 +100,7 @@ async fn main() -> Result<(), reqwest::Error> {
 
             let formatted = format_eq_filters(headphone_correction);
 
-            write_yml_file(formatted);
+            write_yml_file(formatted, query_result.0);
             progress_bar.finish_with_message(
                 "...Your config for CamillaDSP was created successfully. Happy listening! :)",
             );
