@@ -23,11 +23,6 @@ impl Configuration {
     }
 }
 
-// #[derive(Debug, Serialize, Deserialize)]
-// pub struct Mixers {
-//     mixers: HashMap<String, Mixer>,
-// }
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Mixer {
     pub channels: MixerChannels,
@@ -58,41 +53,42 @@ pub struct MixerChannels {
 #[derive(Debug, Serialize)]
 #[serde(tag = "type")]
 enum Filter {
-    Gain { parameters: GainParameters },
     Biquad { parameters: BiquadParameters },
+    Gain { parameters: GainParameters },
 }
 
 #[derive(Debug, Serialize)]
 #[serde(tag = "type")]
-enum PipelineStep {
-    Mixer { name: String },
-    Filter { channel: usize, names: Vec<String> },
+pub enum BiquadParameters {
+    Highpass { freq: f32, q: f32 },
+    Lowpass { freq: f32, q: f32 },
+    Peaking(PeakingWidth),
+    HighshelfFO { freq: f32, gain: f32 },
+    LowshelfFO { freq: f32, gain: f32 },
+    HighpassFO { freq: f32 },
+    LowpassFO { freq: f32 },
 }
 
 #[derive(Debug, Serialize)]
-pub struct BiquadParameters {
-    freq: f32,
-    q: f32,
-    gain: f32,
-    #[serde(rename = "type")]
-    name: String,
-}
-impl BiquadParameters {
-    pub fn new(freq: f32, q: f32, gain: f32) -> Self {
-        BiquadParameters {
-            freq,
-            q,
-            gain,
-            name: "Peaking".to_string(),
-        }
-    }
+#[serde(untagged)]
+pub enum PeakingWidth {
+    Q {
+        freq: f32,
+        q: f32,
+        gain: f32,
+    },
+    Bandwidth {
+        freq: f32,
+        bandwidth: f32,
+        gain: f32,
+    },
 }
 
 #[derive(Debug, Serialize)]
-struct GainParameters {
-    gain: f32,
-    inverted: bool,
-    mute: bool,
+pub struct GainParameters {
+    pub gain: f32,
+    pub inverted: bool,
+    pub mute: bool,
 }
 impl GainParameters {
     fn new(gain: f32) -> Self {
@@ -102,6 +98,28 @@ impl GainParameters {
             mute: false,
         }
     }
+}
+// #[derive(Debug, Serialize)]
+// struct GainParameters {
+//     gain: f32,
+//     inverted: bool,
+//     mute: bool,
+// }
+// impl GainParameters {
+//     fn new(gain: f32) -> Self {
+//         GainParameters {
+//             gain,
+//             inverted: false,
+//             mute: false,
+//         }
+//     }
+// }
+
+#[derive(Debug, Serialize)]
+#[serde(tag = "type")]
+enum PipelineStep {
+    Mixer { name: String },
+    Filter { channel: usize, names: Vec<String> },
 }
 
 pub fn format_eq_filters(data: CorrectionFilterSet) -> Configuration {
@@ -113,35 +131,93 @@ pub fn format_eq_filters(data: CorrectionFilterSet) -> Configuration {
         let crossfeed_mixers: HashMap<String, Mixer> =
             serde_yaml::from_slice(include_bytes!("crossfeed_mixer.yml")).unwrap();
         config.mixers = Some(crossfeed_mixers);
+
+        config.filters.insert(
+            "Crossfeed_Gain".to_string(),
+            Filter::Gain {
+                parameters: GainParameters::new(-10.0),
+            },
+        );
+
+        config.filters.insert(
+            "Crossfeed_EQ".to_string(),
+            Filter::Biquad {
+                parameters: BiquadParameters::Lowpass {
+                    freq: 700.0,
+                    q: 0.5,
+                },
+            },
+        );
+
+        config.filters.insert(
+            "Crossfeed_Direct_Lowshelf".to_string(),
+            Filter::Biquad {
+                parameters: BiquadParameters::LowshelfFO {
+                    freq: 900.0,
+                    gain: -2.0,
+                },
+            },
+        );
+
+        config.pipeline.push(PipelineStep::Mixer {
+            name: "Crossfeed_Split".to_string(),
+        });
+
+        config.pipeline.push(PipelineStep::Filter {
+            channel: 0,
+            names: vec!["Crossfeed_Gain".to_string(), "Crossfeed_EQ".to_string()],
+        });
+
+        config.pipeline.push(PipelineStep::Filter {
+            channel: 1,
+            names: vec!["Crossfeed_Direct_Lowshelf".to_string()],
+        });
+
+        config.pipeline.push(PipelineStep::Filter {
+            channel: 2,
+            names: vec!["Crossfeed_Direct_Lowshelf".to_string()],
+        });
+
+        config.pipeline.push(PipelineStep::Filter {
+            channel: 3,
+            names: vec!["Crossfeed_Gain".to_string(), "Crossfeed_EQ".to_string()],
+        });
+
+        config.pipeline.push(PipelineStep::Mixer {
+            name: "Crossfeed_Sum".to_string(),
+        });
     }
 
     // correction eq filters
+    let mut correction_eq_filter_names: Vec<String> = Vec::new();
     config.filters.insert(
         "01_Preamp_Gain".to_string(),
         Filter::Gain {
             parameters: GainParameters::new(data.gain),
         },
     );
+    correction_eq_filter_names.push("01_Preamp_Gain".to_string());
     data.eq_bands.into_iter().enumerate().for_each(|(i, band)| {
         let name = format!("Correction_Eq_Band_{}", i);
+        correction_eq_filter_names.push(name.clone());
         config
             .filters
             .insert(name, Filter::Biquad { parameters: band });
     });
-    let mut filter_names: Vec<String> = Vec::new();
-    config.filters.iter().for_each(|(n, _)| {
-        filter_names.push(n.clone());
+
+    // config.filters.iter().for_each(|(n, _)| {
+    //     filter_names.push(n.clone());
+    // });
+
+    config.pipeline.push(PipelineStep::Filter {
+        channel: 0,
+        names: correction_eq_filter_names.clone(),
     });
-    config.pipeline = vec![
-        PipelineStep::Filter {
-            channel: 0,
-            names: filter_names.clone(),
-        },
-        PipelineStep::Filter {
-            channel: 1,
-            names: filter_names,
-        },
-    ];
+    config.pipeline.push(PipelineStep::Filter {
+        channel: 1,
+        names: correction_eq_filter_names,
+    });
+
     config
 }
 
