@@ -9,6 +9,9 @@ license = "LICENSE"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[[bin]]
+name = "autoeq2camilladsp"
+path = "src/main.rs"
 
 [dependencies]
 reqwest = "0.11"
