@@ -135,7 +135,7 @@ pub fn format_eq_filters(data: CorrectionFilterSet) -> Configuration {
         config.filters.insert(
             "Crossfeed_Gain".to_string(),
             Filter::Gain {
-                parameters: GainParameters::new(-10.0),
+                parameters: GainParameters::new(-8.0),
             },
         );
 
