@@ -63,6 +63,9 @@ jobs:
         with:
           submodules: true
 
+      - name: Update package list
+        run: sudo apt-get update
+        
       - name: Install ${{ matrix.rust }} toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -70,6 +73,9 @@ jobs:
           toolchain: ${{ matrix.rust }}
           target: ${{ matrix.target }}
           override: true
+
+      - name: Install OpenSSL
+        run: sudo apt-get install openssl libssl-dev -y
 
       - name: Run cargo test
         uses: actions-rs/cargo@v1
