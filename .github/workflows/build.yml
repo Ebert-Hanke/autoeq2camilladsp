@@ -16,6 +16,9 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v2
 
+      - name: Update package list
+        run: sudo apt-get update
+        
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -23,6 +26,9 @@ jobs:
           toolchain: stable
           override: true
 
+      - name: Install OpenSSL
+        run: sudo apt-get install openssl libssl-dev -y
+          
       - uses: Swatinem/rust-cache@v1
 
       - name: Run cargo check
