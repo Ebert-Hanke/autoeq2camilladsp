@@ -38,7 +38,7 @@ jobs:
           args: --release
 
       - name: Compress
-        run: tar -zcvf autoeq2camilladsp.tar.gz -C target/release camilladsp
+        run: tar -zcvf autoeq2camilladsp.tar.gz -C target/release autoeq2camilladsp
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
