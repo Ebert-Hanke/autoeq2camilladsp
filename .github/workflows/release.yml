@@ -48,7 +48,7 @@ jobs:
           asset_name: autoeq2camilladsp-linux-amd64.tar.gz
           tag: ${{ github.ref }}
           
- macos:
+  macos:
     name: macOS
     runs-on: macos-latest
     steps:
