@@ -47,6 +47,43 @@ jobs:
           file: autoeq2camilladsp.tar.gz
           asset_name: autoeq2camilladsp-linux-amd64.tar.gz
           tag: ${{ github.ref }}
+          
+ macos:
+    name: macOS
+    runs-on: macos-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Run cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --release
+
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args:  --release --target
+          
+      - name: Compress
+        run: 7z a -tzip autoeq2camilladsp.zip target/release autoeq2camilladsp
+
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v1-release
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: autoeq2camilladsp.zip
+          asset_name: autoeq2camilladsp-macos-x86_64.zip
+          tag: ${{ github.ref }}
 
   macos_arm:
     name: macOS aarch64
@@ -63,6 +100,12 @@ jobs:
           override: true
           target: aarch64-apple-darwin
 
+      - name: Run cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --release
+
       - name: Build
         uses: actions-rs/cargo@v1
         with:
@@ -77,5 +120,5 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: autoeq2camilladsp.zip
-          asset_name: autoeq2camilladsp-macos-aarch64.zip
+          asset_name: autoeq2camilladsp-macos-arm64.zip
           tag: ${{ github.ref }}
