@@ -13,7 +13,7 @@ env:
   BIN_NAME: autoeq2camilladsp
   PROJECT_NAME: autoeq2camilladsp
   REPO_NAME: Ebert-Hanke/autoeq2camilladsp
-  
+
 jobs:
   dist:
     name: Dist
