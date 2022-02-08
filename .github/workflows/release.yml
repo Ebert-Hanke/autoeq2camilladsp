@@ -13,10 +13,7 @@ env:
   BIN_NAME: autoeq2camilladsp
   PROJECT_NAME: autoeq2camilladsp
   REPO_NAME: Ebert-Hanke/autoeq2camilladsp
-  SDKROOT: /Applications/Xcode_12.2.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.0.sdk
-  MACOSX_DEPLOYMENT_TARGET: 11.0
-  DEVELOPER_DIR: /Applications/Xcode_12.2.app
-
+  
 jobs:
   dist:
     name: Dist
@@ -24,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false # don't fail other jobs if one fails
       matrix:
-        build: [x86_64-linux, x86_64-macos, x86_64-windows, x86_64-win-gnu, win32-msvc] # aarch64-linux,
+        build: [x86_64-linux, x86_64-macos, x86_64-windows, x86_64-win-gnu, win32-msvc, aarch64-macos] # aarch64-linux,
         include:
         - build: x86_64-linux
           os: ubuntu-20.04
