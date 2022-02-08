@@ -16,24 +16,53 @@ impl CorrectionFilterSet {
     }
 }
 
-pub async fn collect_links(
+pub async fn get_correction_result_list(
     client: &reqwest::Client,
     url: &str,
 ) -> Result<HashMap<String, String>, reqwest::Error> {
     let mut link_list: HashMap<String, String> = HashMap::new();
-    let link_selector = Selector::parse("a").unwrap();
+    let ul_selector = Selector::parse("ul").unwrap();
+    let li_selector = Selector::parse("li").unwrap();
+    let a_selector = Selector::parse("a").unwrap();
     let raw_result = client.get(url).send().await?.text().await?;
     let document = Html::parse_document(&raw_result);
-    //let mut link_list: Vec<ScrapedLink> = Vec::new();
-    for element in document.select(&link_selector) {
-        let link_text = element.inner_html().to_lowercase();
-        let link_url = match element.value().attr("href") {
-            Some(url) => url.to_string(),
-            _ => "No Url found.".to_string(),
-        };
-        //let link = ScrapedLink::new(link_text, link_url.to_string());
-        link_list.insert(link_text, link_url);
+    for ul in document.select(&ul_selector) {
+        for li in ul.select(&li_selector) {
+            for a in li.select(&a_selector) {
+                let link_text = a.inner_html().to_lowercase();
+                let link_url = match a.value().attr("href") {
+                    Some(url) => url.to_string(),
+                    _ => "Nor Url found.".to_string(),
+                };
+                if !link_text.len() > 100 && !link_text.contains('<') && !link_text.contains('>') {
+                    link_list.insert(link_text, link_url);
+                }
+            }
+        }
     }
+
+    Ok(link_list)
+}
+
+pub async fn collect_datafile_links(
+    client: &reqwest::Client,
+    url: &str,
+) -> Result<HashMap<String, String>, reqwest::Error> {
+    let mut link_list: HashMap<String, String> = HashMap::new();
+    let a_selector = Selector::parse("a").unwrap();
+    let raw_result = client.get(url).send().await?.text().await?;
+    let document = Html::parse_document(&raw_result);
+    for a in document.select(&a_selector) {
+        let link_text = a.inner_html().to_lowercase();
+        let link_url = match a.value().attr("href") {
+            Some(url) => url.to_string(),
+            _ => "Nor Url found.".to_string(),
+        };
+        if !link_text.len() > 100 && !link_text.contains('<') && !link_text.contains('>') {
+            link_list.insert(link_text, link_url);
+        }
+    }
+
     Ok(link_list)
 }
 
@@ -51,7 +80,11 @@ pub fn filter_link_list(link_list: &HashMap<String, String>, query: &str) -> Que
         }
         None => {
             let mut suggestions: Vec<String> = link_list.keys().cloned().collect();
-            suggestions.retain(|key| key.to_lowercase().contains(&query.to_lowercase()));
+            query
+                .to_lowercase()
+                .split_whitespace()
+                .into_iter()
+                .for_each(|part| suggestions.retain(|key| key.to_lowercase().contains(part)));
             if !suggestions.is_empty() {
                 return QueryResult::Suggestions(suggestions);
             }

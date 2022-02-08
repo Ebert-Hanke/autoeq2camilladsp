@@ -6,7 +6,8 @@ use console::style;
 use dialoguer::{theme::ColorfulTheme, Input, Select};
 use indicatif::ProgressBar;
 use scraping::{
-    collect_links, filter_link_list, parse_filter_line, pick_url, CorrectionFilterSet, QueryResult,
+    collect_datafile_links, filter_link_list, get_correction_result_list, parse_filter_line,
+    pick_url, CorrectionFilterSet, QueryResult,
 };
 
 // url for Jaako Pasanen's AutoEq
@@ -27,11 +28,22 @@ async fn main() -> Result<(), reqwest::Error> {
 
     progress_bar.set_message("Loading Database...");
     let url = GITHUB_URL.to_owned() + REPO_URL;
-    let database_result_list = collect_links(&client, &url).await?;
+    let database_result_list = get_correction_result_list(&client, &url).await?;
     progress_bar.finish_with_message("...Database loaded.");
 
     let headphone_query: String = Input::with_theme(&ColorfulTheme::default())
         .with_prompt("Which Headphones or IEMs do you want to EQ with AutoEq?")
+        .validate_with({
+            let mut force = None;
+            move|input: &String|->Result<(),&str>{
+                if input.len() > 1 || force.as_ref().map_or(false, |old|old==input){
+                    Ok(())
+                }else{
+                    force = Some(input.clone());
+                    Err("Please give me a bit more information, this is just one letter. Type the same value again to force use.")
+                }
+            }
+        })
         .interact_text()
         .unwrap();
 
@@ -67,7 +79,7 @@ async fn main() -> Result<(), reqwest::Error> {
 
     progress_bar.set_message("Loading EQ settings...");
     let headphone_url = GITHUB_URL.to_owned() + &query_result.1;
-    let headphone_query_link_list = collect_links(&client, &headphone_url).await?;
+    let headphone_query_link_list = collect_datafile_links(&client, &headphone_url).await?;
     progress_bar.finish_with_message("...EQ settings loaded.");
     match pick_url(headphone_query_link_list, PARAM_EQ) {
         Some(url) => {

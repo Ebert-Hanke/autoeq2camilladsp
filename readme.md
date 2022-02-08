@@ -4,7 +4,7 @@ This is a simple tool to easily create a configuration file for your Headphones 
 
 ## Things ToDo
 
-- [ ] Better filtering of results (atm quite quick and dirty scraping)
+- [x] Better filtering of results (atm quite quick and dirty scraping)
 - [ ] Option to include individual `devices` section as `.yml` file (atm a standard section is included which you need to change)
 - [ ] Option to include crossfeed for headphones based on different implementations
 - [ ] Option to include highshelf and/or lowshelf with sensible defaults
