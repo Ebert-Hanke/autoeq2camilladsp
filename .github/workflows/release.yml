@@ -70,7 +70,7 @@ jobs:
           args:  --release --target aarch64-apple-darwin
           
       - name: Compress
-        run: 7z autoeq2camilladsp.zip target/aarch64-apple-darwin/release autoeq2camilladsp
+        run: 7z a -tzip autoeq2camilladsp.zip target/aarch64-apple-darwin/release autoeq2camilladsp
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v1-release
