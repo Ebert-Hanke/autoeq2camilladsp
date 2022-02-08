@@ -72,7 +72,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args:  --release --target
+          args:  --release
           
       - name: Compress
         run: 7z a -tzip autoeq2camilladsp.zip target/release autoeq2camilladsp
