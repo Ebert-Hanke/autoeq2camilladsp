@@ -68,11 +68,7 @@ jobs:
         with:
           command: build
           args:  --release --target aarch64-apple-darwin
-        env:
-          SDKROOT: /Applications/Xcode_12.2.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.0.sdk
-          MACOSX_DEPLOYMENT_TARGET: 11.0
-          DEVELOPER_DIR: /Applications/Xcode_12.2.app
-
+          
       - name: Compress
         run: 7z autoeq2camilladsp.zip target/aarch64-apple-darwin/release autoeq2camilladsp
 
