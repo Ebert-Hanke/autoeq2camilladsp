@@ -152,7 +152,7 @@ Otherwise try again and enter the relative path to your custom 'devices' file:",
 
             let formatted = format_eq_filters(headphone_correction);
 
-            write_yml_file(formatted, query_result.0);
+            write_yml_file(formatted, query_result.0, devices_file);
             progress_bar.finish_with_message(
                 "...Your config for CamillaDSP was created successfully. Happy listening! :)",
             );

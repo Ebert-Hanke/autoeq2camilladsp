@@ -3,7 +3,7 @@ use serde::Serialize;
 use std::{
     collections::BTreeMap,
     fs::File,
-    io::{LineWriter, Read, Write},
+    io::{Read, Write},
 };
 
 #[derive(Debug, Serialize)]
@@ -100,7 +100,7 @@ pub fn format_eq_filters(data: CorrectionFilterSet) -> Configuration {
 }
 
 pub fn write_yml_file(filterset: Configuration, headphone_name: String, devices: DevicesFile) {
-    let mut devices_config = match devices {
+    let devices_config = match devices {
         DevicesFile::Default => include_str!("devices.yml").to_string(),
         DevicesFile::Custom(path) => {
             let mut file = File::open(path).expect("File could not be read.");
@@ -113,8 +113,11 @@ pub fn write_yml_file(filterset: Configuration, headphone_name: String, devices:
 
     let filename = format!("{}-AutoEq.yml", headphone_name.replace(" ", "_"));
     let mut config_file = File::create(filename).expect("Could not create file.");
+    writeln!(config_file, "---").unwrap();
     for line in devices_config.lines() {
-        write!(config_file, "{}", line);
+        if line != "---" {
+            writeln!(config_file, "{}", line).unwrap();
+        }
     }
     config_file.write_all(&serialized_yaml).unwrap();
 }
