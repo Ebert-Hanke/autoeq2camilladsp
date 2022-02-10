@@ -122,3 +122,40 @@ jobs:
           file: autoeq2camilladsp.zip
           asset_name: autoeq2camilladsp-macos-arm64.zip
           tag: ${{ github.ref }}
+
+  windows:
+    name: Windows
+    runs-on: windows-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Run cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --release
+
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
+
+      - name: Compress
+        run: powershell Compress-Archive target/release/autoeq2camilladsp.exe autoeq2camilladsp.zip
+
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v1-release
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: autoeq2camilladsp.zip
+          asset_name: autoeq2camilladsp-windows-amd64.zip
+          tag: ${{ github.ref }}
