@@ -5,6 +5,10 @@ This is a simple tool to easily create a configuration file for your Headphones 
 ## Things ToDo
 
 - [x] Better filtering of results (atm quite quick and dirty scraping)
-- [ ] Option to include individual `devices` section as `.yml` file (atm a standard section is included which you need to change)
+- [x] Option to include individual `devices` section as `.yml` file (atm a standard section is included which you need to change)
 - [ ] Option to include crossfeed for headphones based on different implementations
 - [ ] Option to include highshelf and/or lowshelf with sensible defaults
+
+## Devices Section
+
+The CamillaDSP configuration starts with a `devices` section which will be specific to the equipment you are using. In order to include this section just put it in a `.yml` file and it can be read and added to your configuration.

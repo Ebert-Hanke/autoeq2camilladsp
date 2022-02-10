@@ -1,6 +1,10 @@
-use crate::scraping::CorrectionFilterSet;
+use crate::{scraping::CorrectionFilterSet, DevicesFile};
 use serde::Serialize;
-use std::{collections::BTreeMap, io::Write};
+use std::{
+    collections::BTreeMap,
+    fs::File,
+    io::{Read, Write},
+};
 
 #[derive(Debug, Serialize)]
 pub struct Configuration {
@@ -95,15 +99,25 @@ pub fn format_eq_filters(data: CorrectionFilterSet) -> Configuration {
     config
 }
 
-pub fn write_yml_file(filterset: Configuration, headphone_name: String) {
-    let filename = format!("{}-AutoEq.yml", headphone_name.replace(" ", "_"));
-    let mut file = std::fs::OpenOptions::new()
-        .write(true)
-        .create(true)
-        .open(filename)
-        .expect("Could not open file.");
-    let devices = include_bytes!("devices.yml");
+pub fn write_yml_file(filterset: Configuration, headphone_name: String, devices: DevicesFile) {
+    let devices_config = match devices {
+        DevicesFile::Default => include_str!("devices.yml").to_string(),
+        DevicesFile::Custom(path) => {
+            let mut file = File::open(path).expect("File could not be read.");
+            let mut buffer = String::new();
+            file.read_to_string(&mut buffer).unwrap();
+            buffer
+        }
+    };
     let serialized_yaml = serde_yaml::to_vec(&filterset).unwrap().split_off(4);
-    file.write_all(devices).unwrap();
-    file.write_all(&serialized_yaml).unwrap();
+
+    let filename = format!("{}-AutoEq.yml", headphone_name.replace(" ", "_"));
+    let mut config_file = File::create(filename).expect("Could not create file.");
+    writeln!(config_file, "---").unwrap();
+    for line in devices_config.lines() {
+        if line != "---" {
+            writeln!(config_file, "{}", line).unwrap();
+        }
+    }
+    config_file.write_all(&serialized_yaml).unwrap();
 }
