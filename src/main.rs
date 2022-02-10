@@ -3,18 +3,24 @@ mod scraping;
 
 use configcreation::{format_eq_filters, write_yml_file};
 use console::style;
-use dialoguer::{theme::ColorfulTheme, Input, Select};
+use dialoguer::{theme::ColorfulTheme, Confirm, Input, Select};
 use indicatif::ProgressBar;
 use scraping::{
     collect_datafile_links, filter_link_list, get_correction_result_list, parse_filter_line,
     pick_url, CorrectionFilterSet, QueryResult,
 };
+use std::fs::File;
 
 // url for Jaako Pasanen's AutoEq
 const GITHUB_URL: &str = "https://github.com";
 const REPO_URL: &str = "/jaakkopasanen/AutoEq/blob/master/results/";
 // query for ParametricEQ raw file
 const PARAM_EQ: &str = "ParametricEQ.txt";
+
+pub enum DevicesFile {
+    Default,
+    Custom(String),
+}
 
 #[tokio::main]
 async fn main() -> Result<(), reqwest::Error> {
@@ -81,13 +87,47 @@ async fn main() -> Result<(), reqwest::Error> {
     let headphone_url = GITHUB_URL.to_owned() + &query_result.1;
     let headphone_query_link_list = collect_datafile_links(&client, &headphone_url).await?;
     progress_bar.finish_with_message("...EQ settings loaded.");
+
+    let custom_devices_query: bool = Confirm::with_theme(&ColorfulTheme::default())
+        .with_prompt(
+            "Would you like to include a custom 'devices' section for your CamillaDSP config file?",
+        )
+        .interact()
+        .unwrap();
+
+    let devices_file = match custom_devices_query {
+        true => {
+            let mut custom_device_path: String = Input::with_theme(&ColorfulTheme::default())
+                .with_prompt("Please enter the relative path to your custom 'devices' file:")
+                .interact_text()
+                .unwrap();
+            let mut valid = File::open(&custom_device_path);
+            while valid.is_err() {
+                custom_device_path = Input::with_theme(&ColorfulTheme::default())
+                    .with_prompt(
+                        "Sorry this file does not seem to exist.\
+If you want to quit, please enter 'q'\
+Otherwise try again and enter the relative path to your custom 'devices' file:",
+                    )
+                    .interact_text()
+                    .unwrap();
+                if custom_device_path.to_lowercase().trim() == "q" {
+                    std::process::exit(0);
+                }
+                valid = File::open(&custom_device_path);
+            }
+            DevicesFile::Custom(custom_device_path)
+        }
+        false => DevicesFile::Default,
+    };
+
+    progress_bar.set_message("Parsing AutoEq settings to CamillaDSP...");
     match pick_url(headphone_query_link_list, PARAM_EQ) {
         Some(url) => {
             let eq_url =
                 "https://raw.githubusercontent.com".to_owned() + &url.1.replace("/blob", "");
             let eq_file = client.get(eq_url).send().await?.text().await?;
 
-            progress_bar.set_message("Parsing AutoEq settings to CamillaDSP...");
             let mut data = eq_file.lines();
             let preamp_gain = data
                 .next()
