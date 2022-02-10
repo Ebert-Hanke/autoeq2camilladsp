@@ -88,6 +88,9 @@ async fn main() -> Result<(), reqwest::Error> {
     let headphone_query_link_list = collect_datafile_links(&client, &headphone_url).await?;
     progress_bar.finish_with_message("...EQ settings loaded.");
 
+    println!("You have the option to include a custom 'devices' section from a .yml file.\n
+If you do not choose to do so, the configuration will be created with a default 'devices' section which you then can edit and use for future configurations.");
+
     let custom_devices_query: bool = Confirm::with_theme(&ColorfulTheme::default())
         .with_prompt(
             "Would you like to include a custom 'devices' section for your CamillaDSP config file?",
@@ -105,8 +108,8 @@ async fn main() -> Result<(), reqwest::Error> {
             while valid.is_err() {
                 custom_device_path = Input::with_theme(&ColorfulTheme::default())
                     .with_prompt(
-                        "Sorry this file does not seem to exist.\
-If you want to quit, please enter 'q'\
+                        "Sorry this file does not seem to exist.\n
+If you want to quit, please enter 'q'\n
 Otherwise try again and enter the relative path to your custom 'devices' file:",
                     )
                     .interact_text()
