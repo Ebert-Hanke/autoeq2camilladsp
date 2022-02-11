@@ -22,12 +22,16 @@ impl Configuration {
             pipeline: Vec::new(),
         }
     }
+    // for future use
+    #[allow(dead_code)]
     fn add_mixer(&mut self, mixer_name: String, mixer: Mixer) {
         self.mixers.insert(mixer_name, mixer);
     }
     fn add_mixers(&mut self, mixers: HashMap<String, Mixer>) {
         self.mixers.extend(mixers);
     }
+    // for future use
+    #[allow(dead_code)]
     fn add_filter(&mut self, filter_name: String, filter: Filter) {
         self.filters.insert(filter_name, filter);
     }
@@ -79,13 +83,37 @@ enum Filter {
 #[derive(Debug, Serialize)]
 #[serde(tag = "type")]
 pub enum BiquadParameters {
-    Highpass { freq: f32, q: f32 },
-    Lowpass { freq: f32, q: f32 },
+    // for future use
+    #[allow(dead_code)]
+    Highpass {
+        freq: f32,
+        q: f32,
+    },
+    Lowpass {
+        freq: f32,
+        q: f32,
+    },
     Peaking(PeakingWidth),
-    HighshelfFO { freq: f32, gain: f32 },
-    LowshelfFO { freq: f32, gain: f32 },
-    HighpassFO { freq: f32 },
-    LowpassFO { freq: f32 },
+    // for future use
+    #[allow(dead_code)]
+    HighshelfFO {
+        freq: f32,
+        gain: f32,
+    },
+    LowshelfFO {
+        freq: f32,
+        gain: f32,
+    },
+    // for future use
+    #[allow(dead_code)]
+    HighpassFO {
+        freq: f32,
+    },
+    // for future use
+    #[allow(dead_code)]
+    LowpassFO {
+        freq: f32,
+    },
 }
 
 #[derive(Debug, Serialize)]
@@ -96,6 +124,8 @@ pub enum PeakingWidth {
         q: f32,
         gain: f32,
     },
+    // for future use
+    #[allow(dead_code)]
     Bandwidth {
         freq: f32,
         bandwidth: f32,

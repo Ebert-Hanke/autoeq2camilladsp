@@ -1,7 +1,7 @@
 mod configcreation;
 mod scraping;
 
-use anyhow::{Error, Result};
+use anyhow::Result;
 use configcreation::{build_configuration, write_yml_file, Crossfeed};
 use console::style;
 use dialoguer::{theme::ColorfulTheme, Confirm, Input, Select};
