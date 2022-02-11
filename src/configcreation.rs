@@ -194,13 +194,13 @@ fn add_preset_mixers(configuration: &mut Configuration) -> Result<()> {
 fn add_crossfeed_filters(configuration: &mut Configuration) {
     let mut crossfeed_filters = BTreeMap::new();
     crossfeed_filters.insert(
-        "Crossfeed_Gain".to_string(),
+        "XF_Cross_Gain".to_string(),
         Filter::Gain {
             parameters: GainParameters::new(-8.0),
         },
     );
     crossfeed_filters.insert(
-        "Crossfeed_EQ".to_string(),
+        "XF_Cross_Lowpass".to_string(),
         Filter::Biquad {
             parameters: BiquadParameters::Lowpass {
                 freq: 700.0,
@@ -209,7 +209,7 @@ fn add_crossfeed_filters(configuration: &mut Configuration) {
         },
     );
     crossfeed_filters.insert(
-        "Crossfeed_Direct_Lowshelf".to_string(),
+        "XF_Direct_LowShelf".to_string(),
         Filter::Biquad {
             parameters: BiquadParameters::LowshelfFO {
                 freq: 900.0,
@@ -231,7 +231,7 @@ fn add_crossfeed_pipeline(configuration: &mut Configuration) {
         },
         PipelineStep::Filter {
             channel: 0,
-            names: vec_of_strings!["XF_Cross_Gain", "XF_Cross_EQ"],
+            names: vec_of_strings!["XF_Cross_Gain", "XF_Cross_Lowpass"],
         },
         PipelineStep::Filter {
             channel: 1,
@@ -243,7 +243,7 @@ fn add_crossfeed_pipeline(configuration: &mut Configuration) {
         },
         PipelineStep::Filter {
             channel: 3,
-            names: vec_of_strings!["XF_Cross_Gain", "XF_Cross_EQ"],
+            names: vec_of_strings!["XF_Cross_Gain", "XF_Cross_Lowpass"],
         },
         PipelineStep::Mixer {
             name: "XF_OUT".to_string(),
