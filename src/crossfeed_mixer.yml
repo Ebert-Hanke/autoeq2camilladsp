@@ -1,4 +1,4 @@
-  Crossfeed_Split:
+  XF_IN:
     channels:
       in: 2
       out: 4
@@ -31,7 +31,7 @@
         gain: 0
         inverted: false
         mute: false
-  Crossfeed_Sum:
+  XF_OUT:
     channels:
       in: 4
       out: 2

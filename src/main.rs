@@ -1,7 +1,8 @@
 mod configcreation;
 mod scraping;
 
-use configcreation::{format_eq_filters, write_yml_file};
+use anyhow::{Error, Result};
+use configcreation::{build_configuration, write_yml_file, Crossfeed};
 use console::style;
 use dialoguer::{theme::ColorfulTheme, Confirm, Input, Select};
 use indicatif::ProgressBar;
@@ -23,7 +24,7 @@ pub enum DevicesFile {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), reqwest::Error> {
+async fn main() -> Result<()> {
     let client = reqwest::Client::builder()
         .user_agent("AutoEq2CamillaDSP")
         .build()?;
@@ -50,8 +51,7 @@ async fn main() -> Result<(), reqwest::Error> {
                 }
             }
         })
-        .interact_text()
-        .unwrap();
+        .interact_text()?;
 
     let query_result = match filter_link_list(&database_result_list, &headphone_query) {
         QueryResult::Success(url) => {
@@ -67,8 +67,7 @@ async fn main() -> Result<(), reqwest::Error> {
                 .with_prompt("Maybe one of these is the one you are looking for?")
                 .default(0)
                 .items(&suggestions[..])
-                .interact()
-                .unwrap();
+                .interact()?;
             match filter_link_list(&database_result_list, &suggestions[selection]) {
                 QueryResult::Success(url) => url,
                 _ => std::process::exit(0),
@@ -95,15 +94,13 @@ If you do not choose to do so, the configuration will be created with a default 
         .with_prompt(
             "Would you like to include a custom 'devices' section for your CamillaDSP config file?",
         )
-        .interact()
-        .unwrap();
+        .interact()?;
 
     let devices_file = match custom_devices_query {
         true => {
             let mut custom_device_path: String = Input::with_theme(&ColorfulTheme::default())
                 .with_prompt("Please enter the relative path to your custom 'devices' file:")
-                .interact_text()
-                .unwrap();
+                .interact_text()?;
             let mut valid = File::open(&custom_device_path);
             while valid.is_err() {
                 custom_device_path = Input::with_theme(&ColorfulTheme::default())
@@ -112,8 +109,7 @@ If you do not choose to do so, the configuration will be created with a default 
 If you want to quit, please enter 'q'\n
 Otherwise try again and enter the relative path to your custom 'devices' file:",
                     )
-                    .interact_text()
-                    .unwrap();
+                    .interact_text()?;
                 if custom_device_path.to_lowercase().trim() == "q" {
                     std::process::exit(0);
                 }
@@ -122,6 +118,17 @@ Otherwise try again and enter the relative path to your custom 'devices' file:",
             DevicesFile::Custom(custom_device_path)
         }
         false => DevicesFile::Default,
+    };
+
+    let crossfeed_query: bool = Confirm::with_theme(&ColorfulTheme::default())
+        .with_prompt(
+            "Would you like to include Crossfeed modeled after the analogue implementation by Pow Chu Moy?"
+        )
+        .interact()?;
+
+    let crossfeed = match crossfeed_query {
+        true => Crossfeed::PowChuMoy,
+        false => Crossfeed::None,
     };
 
     progress_bar.set_message("Parsing AutoEq settings to CamillaDSP...");
@@ -153,9 +160,9 @@ Otherwise try again and enter the relative path to your custom 'devices' file:",
                 }
             });
 
-            let formatted = format_eq_filters(headphone_correction);
+            let configuration = build_configuration(headphone_correction, crossfeed)?;
+            write_yml_file(configuration, query_result.0, devices_file)?;
 
-            write_yml_file(formatted, query_result.0, devices_file);
             progress_bar.finish_with_message(
                 "...Your config for CamillaDSP was created successfully. Happy listening! :)",
             );

@@ -9,18 +9,36 @@ use std::{
 
 #[derive(Debug, Serialize)]
 pub struct Configuration {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    mixers: Option<HashMap<String, Mixer>>,
+    #[serde(skip_serializing_if = "HashMap::is_empty")]
+    mixers: HashMap<String, Mixer>,
     filters: BTreeMap<String, Filter>,
     pipeline: Vec<PipelineStep>,
 }
 impl Configuration {
     fn new() -> Self {
         Configuration {
-            mixers: None,
+            mixers: HashMap::new(),
             filters: BTreeMap::new(),
             pipeline: Vec::new(),
         }
+    }
+    fn add_mixer(&mut self, mixer_name: String, mixer: Mixer) {
+        self.mixers.insert(mixer_name, mixer);
+    }
+    fn add_mixers(&mut self, mixers: HashMap<String, Mixer>) {
+        self.mixers.extend(mixers);
+    }
+    fn add_filter(&mut self, filter_name: String, filter: Filter) {
+        self.filters.insert(filter_name, filter);
+    }
+    fn add_filters(&mut self, filters: BTreeMap<String, Filter>) {
+        self.filters.extend(filters);
+    }
+    fn add_pipeline_step(&mut self, pipeline_step: PipelineStep) {
+        self.pipeline.push(pipeline_step);
+    }
+    fn add_pipeline_steps(&mut self, pipeline_steps: &mut Vec<PipelineStep>) {
+        self.pipeline.append(pipeline_steps);
     }
 }
 
@@ -108,103 +126,129 @@ enum PipelineStep {
     Filter { channel: usize, names: Vec<String> },
 }
 
-pub fn format_eq_filters(data: CorrectionFilterSet) -> Configuration {
-    let mut config = Configuration::new();
+pub enum Crossfeed {
+    None,
+    PowChuMoy,
+}
 
-    // crossfeed
-    let crossfeed = true;
-    if crossfeed {
-        let crossfeed_mixers: HashMap<String, Mixer> =
-            serde_yaml::from_slice(include_bytes!("crossfeed_mixer.yml")).unwrap();
-        config.mixers = Some(crossfeed_mixers);
+pub fn build_configuration(
+    eq_data: CorrectionFilterSet,
+    crossfeed: Crossfeed,
+) -> Result<Configuration> {
+    let mut configuration = Configuration::new();
+    build_crossfeed(&mut configuration, crossfeed)?;
+    add_correction_eq_filtes(&mut configuration, eq_data);
+    Ok(configuration)
+}
 
-        config.filters.insert(
-            "Crossfeed_Gain".to_string(),
-            Filter::Gain {
-                parameters: GainParameters::new(-8.0),
-            },
-        );
-
-        config.filters.insert(
-            "Crossfeed_EQ".to_string(),
-            Filter::Biquad {
-                parameters: BiquadParameters::Lowpass {
-                    freq: 700.0,
-                    q: 0.5,
-                },
-            },
-        );
-
-        config.filters.insert(
-            "Crossfeed_Direct_Lowshelf".to_string(),
-            Filter::Biquad {
-                parameters: BiquadParameters::LowshelfFO {
-                    freq: 900.0,
-                    gain: -2.0,
-                },
-            },
-        );
-
-        config.pipeline.push(PipelineStep::Mixer {
-            name: "Crossfeed_Split".to_string(),
-        });
-
-        config.pipeline.push(PipelineStep::Filter {
-            channel: 0,
-            names: vec!["Crossfeed_Gain".to_string(), "Crossfeed_EQ".to_string()],
-        });
-
-        config.pipeline.push(PipelineStep::Filter {
-            channel: 1,
-            names: vec!["Crossfeed_Direct_Lowshelf".to_string()],
-        });
-
-        config.pipeline.push(PipelineStep::Filter {
-            channel: 2,
-            names: vec!["Crossfeed_Direct_Lowshelf".to_string()],
-        });
-
-        config.pipeline.push(PipelineStep::Filter {
-            channel: 3,
-            names: vec!["Crossfeed_Gain".to_string(), "Crossfeed_EQ".to_string()],
-        });
-
-        config.pipeline.push(PipelineStep::Mixer {
-            name: "Crossfeed_Sum".to_string(),
-        });
+fn build_crossfeed(configuration: &mut Configuration, crossfeed: Crossfeed) -> Result<()> {
+    match crossfeed {
+        Crossfeed::None => (),
+        Crossfeed::PowChuMoy => {
+            add_preset_mixers(configuration)?;
+            add_crossfeed_filters(configuration);
+            add_crossfeed_pipeline(configuration);
+        }
     }
+    Ok(())
+}
 
-    // correction eq filters
-    let mut correction_eq_filter_names: Vec<String> = Vec::new();
-    config.filters.insert(
+fn add_preset_mixers(configuration: &mut Configuration) -> Result<()> {
+    let crossfeed_mixers: HashMap<String, Mixer> =
+        serde_yaml::from_slice(include_bytes!("crossfeed_mixer.yml"))
+            .context("crossfeed_mixer.yml could not be serialized.")?;
+    configuration.add_mixers(crossfeed_mixers);
+    Ok(())
+}
+
+fn add_crossfeed_filters(configuration: &mut Configuration) {
+    let mut crossfeed_filters = BTreeMap::new();
+    crossfeed_filters.insert(
+        "Crossfeed_Gain".to_string(),
+        Filter::Gain {
+            parameters: GainParameters::new(-8.0),
+        },
+    );
+    crossfeed_filters.insert(
+        "Crossfeed_EQ".to_string(),
+        Filter::Biquad {
+            parameters: BiquadParameters::Lowpass {
+                freq: 700.0,
+                q: 0.5,
+            },
+        },
+    );
+    crossfeed_filters.insert(
+        "Crossfeed_Direct_Lowshelf".to_string(),
+        Filter::Biquad {
+            parameters: BiquadParameters::LowshelfFO {
+                freq: 900.0,
+                gain: -2.0,
+            },
+        },
+    );
+    configuration.add_filters(crossfeed_filters);
+}
+
+macro_rules! vec_of_strings {
+    ($($x:expr),*) => (vec![$($x.to_string()),*]);
+}
+
+fn add_crossfeed_pipeline(configuration: &mut Configuration) {
+    let mut crossfeed_pipeline = vec![
+        PipelineStep::Mixer {
+            name: "XF_IN".to_string(),
+        },
+        PipelineStep::Filter {
+            channel: 0,
+            names: vec_of_strings!["XF_Cross_Gain", "XF_Cross_EQ"],
+        },
+        PipelineStep::Filter {
+            channel: 1,
+            names: vec_of_strings!["XF_Direct_LowShelf"],
+        },
+        PipelineStep::Filter {
+            channel: 2,
+            names: vec_of_strings!["XF_Direct_LowShelf"],
+        },
+        PipelineStep::Filter {
+            channel: 3,
+            names: vec_of_strings!["XF_Cross_Gain", "XF_Cross_EQ"],
+        },
+        PipelineStep::Mixer {
+            name: "XF_OUT".to_string(),
+        },
+    ];
+    configuration.add_pipeline_steps(&mut crossfeed_pipeline);
+}
+
+fn add_correction_eq_filtes(configuration: &mut Configuration, data: CorrectionFilterSet) {
+    let mut correction_eq_filters = BTreeMap::new();
+
+    correction_eq_filters.insert(
         "01_Preamp_Gain".to_string(),
         Filter::Gain {
             parameters: GainParameters::new(data.gain),
         },
     );
-    correction_eq_filter_names.push("01_Preamp_Gain".to_string());
+
     data.eq_bands.into_iter().enumerate().for_each(|(i, band)| {
         let name = format!("Correction_Eq_Band_{}", i);
-        correction_eq_filter_names.push(name.clone());
-        config
-            .filters
-            .insert(name, Filter::Biquad { parameters: band });
+        correction_eq_filters.insert(name, Filter::Biquad { parameters: band });
     });
 
-    // config.filters.iter().for_each(|(n, _)| {
-    //     filter_names.push(n.clone());
-    // });
+    let filter_names: Vec<String> = correction_eq_filters.keys().cloned().collect();
 
-    config.pipeline.push(PipelineStep::Filter {
+    configuration.add_pipeline_step(PipelineStep::Filter {
         channel: 0,
-        names: correction_eq_filter_names.clone(),
+        names: filter_names.clone(),
     });
-    config.pipeline.push(PipelineStep::Filter {
+    configuration.add_pipeline_step(PipelineStep::Filter {
         channel: 1,
-        names: correction_eq_filter_names,
+        names: filter_names,
     });
 
-    config
+    configuration.add_filters(correction_eq_filters);
 }
 
 pub fn write_yml_file(
@@ -237,7 +281,7 @@ fn get_devices(devices: DevicesFile) -> Result<String> {
 fn create_config_file(headphone_name: String) -> Result<File> {
     let filename = format!("{}-EQ.yml", headphone_name.replace(" ", "_"));
     let mut config_file = File::create(filename).context("Could not create configuration file.")?;
-    writeln!(config_file, "---").unwrap();
+    writeln!(config_file, "---").context("Could not write to configuration file.")?;
     Ok(config_file)
 }
 
