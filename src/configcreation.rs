@@ -1,4 +1,5 @@
 use crate::{scraping::CorrectionFilterSet, DevicesFile};
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, HashMap},
@@ -99,21 +100,6 @@ impl GainParameters {
         }
     }
 }
-// #[derive(Debug, Serialize)]
-// struct GainParameters {
-//     gain: f32,
-//     inverted: bool,
-//     mute: bool,
-// }
-// impl GainParameters {
-//     fn new(gain: f32) -> Self {
-//         GainParameters {
-//             gain,
-//             inverted: false,
-//             mute: false,
-//         }
-//     }
-// }
 
 #[derive(Debug, Serialize)]
 #[serde(tag = "type")]
@@ -221,25 +207,56 @@ pub fn format_eq_filters(data: CorrectionFilterSet) -> Configuration {
     config
 }
 
-pub fn write_yml_file(filterset: Configuration, headphone_name: String, devices: DevicesFile) {
+pub fn write_yml_file(
+    configuration: Configuration,
+    headphone_name: String,
+    devices: DevicesFile,
+) -> Result<()> {
+    let devices_config = get_devices(devices)?;
+    let mut config_file = create_config_file(headphone_name)?;
+    write_lines_to_file(&mut config_file, devices_config)?;
+    serialize_and_write_yaml(&mut config_file, &configuration)?;
+    Ok(())
+}
+
+fn get_devices(devices: DevicesFile) -> Result<String> {
     let devices_config = match devices {
         DevicesFile::Default => include_str!("devices.yml").to_string(),
         DevicesFile::Custom(path) => {
-            let mut file = File::open(path).expect("File could not be read.");
+            let mut file =
+                File::open(path).context("Could not open file with custom devices section.")?;
             let mut buffer = String::new();
-            file.read_to_string(&mut buffer).unwrap();
+            file.read_to_string(&mut buffer)
+                .context("Could not read file with custom devices section.")?;
             buffer
         }
     };
-    let serialized_yaml = serde_yaml::to_vec(&filterset).unwrap().split_off(4);
+    Ok(devices_config)
+}
 
-    let filename = format!("{}-AutoEq.yml", headphone_name.replace(" ", "_"));
-    let mut config_file = File::create(filename).expect("Could not create file.");
+fn create_config_file(headphone_name: String) -> Result<File> {
+    let filename = format!("{}-EQ.yml", headphone_name.replace(" ", "_"));
+    let mut config_file = File::create(filename).context("Could not create configuration file.")?;
     writeln!(config_file, "---").unwrap();
-    for line in devices_config.lines() {
+    Ok(config_file)
+}
+
+fn write_lines_to_file(file: &mut File, data: String) -> Result<()> {
+    for line in data.lines() {
         if line != "---" {
-            writeln!(config_file, "{}", line).unwrap();
+            writeln!(file, "{}", line)
+                .context("Line could not be written to configuration file.")?
         }
     }
-    config_file.write_all(&serialized_yaml).unwrap();
+    Ok(())
+}
+
+fn serialize_and_write_yaml(file: &mut File, configuration: &Configuration) -> Result<()> {
+    let serialized_yaml = serde_yaml::to_vec(configuration)
+        .context("The ParametricEq filter settings could not be serialized to yaml.")?
+        // split of the "---" at the beginning of yml file
+        .split_off(4);
+    file.write_all(&serialized_yaml)
+        .context("Unaible to write serialized config to file.")?;
+    Ok(())
 }

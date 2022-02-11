@@ -5,20 +5,20 @@ authors = ["Micha Ebert-Hanke <michael@ebert-hanke.de>"]
 description = "a simple tool to generate a CamillaDSP config based on correction data from the AutoEq repository"
 readme = "README.md"
 repository = "https://github.com/Ebert-Hanke/autoeq2camilladsp/"
-license = "LICENSE"
+license = "MIT"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [[bin]]
 name = "autoeq2camilladsp"
 path = "src/main.rs"
 
 [dependencies]
+anyhow = "1.0"
+console = "0.15"
+dialoguer = "0.9"
+indicatif = "0.16"
 reqwest = "0.11"
-tokio = { version = "1.16", features = ["full"] }
 scraper = "0.12"
 serde = { version = "1.0", features = ["derive"]}
 serde_yaml = "0.8"
-dialoguer = "0.9"
-console = "0.15"
-indicatif = "0.16"
+tokio = { version = "1.16", features = ["full"] }

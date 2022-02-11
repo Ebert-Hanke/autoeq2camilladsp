@@ -1,8 +1,9 @@
 use crate::configcreation::{BiquadParameters, PeakingWidth};
 use scraper::{Html, Selector};
+use serde::Serialize;
 use std::collections::HashMap;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct CorrectionFilterSet {
     pub gain: f32,
     pub eq_bands: Vec<BiquadParameters>,
