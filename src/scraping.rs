@@ -1,8 +1,9 @@
-use crate::configcreation::BiquadParameters;
+use crate::configcreation::{BiquadParameters, PeakingWidth};
 use scraper::{Html, Selector};
+use serde::Serialize;
 use std::collections::HashMap;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct CorrectionFilterSet {
     pub gain: f32,
     pub eq_bands: Vec<BiquadParameters>,
@@ -107,10 +108,10 @@ pub fn parse_filter_line(line: &str) -> Result<BiquadParameters, Box<dyn std::er
     let q = split_line.nth(2);
     match (fc, gain, q) {
         (Some(fc), Some(gain), Some(q)) => {
-            let fc: f32 = fc.parse()?;
+            let freq: f32 = fc.parse()?;
             let gain: f32 = gain.parse()?;
             let q: f32 = q.parse()?;
-            let eq = BiquadParameters::new(fc, q, gain);
+            let eq = BiquadParameters::Peaking(PeakingWidth::Q { freq, q, gain });
             Ok(eq)
         }
         _ => panic!("The value could not be found."),
