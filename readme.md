@@ -13,7 +13,7 @@ The CamillaDSP configuration starts with a `devices` section which will be speci
 You can include [Crossfeed](https://en.wikipedia.org/wiki/Crossfeed) in your configuration file.  
 The basic principle of this is to reduce the channel separation of the stereo signal by feeding a little amount of the lower frequency range from left to right and vice versa.
 
-```
+```mermaid
 graph LR
 A[Left IN]-- -2 dB --> G[Highshelf Filter ca. 950 Hz +2 dB]--> B[Left OUT]
 A -- -8 dB --> E[Lowpass Filter ca. 700 Hz] --> D
