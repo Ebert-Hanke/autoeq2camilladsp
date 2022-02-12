@@ -1,8 +1,9 @@
 # AutoEq2CamillaDSP
 
-This is a simple tool to easily create a configuration file for your Headphones or IEMs using Headphone-Correction-Data from Jaakko Pasanen's [AutoEq](https://github.com/jaakkopasanen/AutoEq) to use with Henrik Enquist's [CamillaDSP](https://github.com/HEnquist/camilladsp) which e.g is now available in [moOde audio player](https://github.com/moode-player/moode).
+This is a simple CLI tool to easily create a configuration file for your Headphones or IEMs using Headphone-Correction-Data from Jaakko Pasanen's [AutoEq](https://github.com/jaakkopasanen/AutoEq) to use with Henrik Enquist's [CamillaDSP](https://github.com/HEnquist/camilladsp) which e.g is now available in [moOde audio player](https://github.com/moode-player/moode).
 
-## Things ToDo
+## Things To Do
+- [ ] Narrow down headphone suggestions by input
 - [ ] Include different Crossfeed options
 - [ ] Option to include Highshelf and/or Lowshelf with sensible defaults
 
