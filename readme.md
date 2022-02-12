@@ -15,11 +15,10 @@ The basic principle of this is to reduce the channel separation of the stereo si
 
 ```
 graph LR
-    A[LEFT IN] --> C,D
-    B[RIGHT IN] --> C,E
-    C[Lowpass Filter 700Hz]
-    D[LEFT OUT]
-    E[RIGHT OUT]
+A[Left IN]-- -2 dB --> G[Highshelf Filter ca. 950 Hz +2 dB]--> B[Left OUT]
+A -- -8 dB --> E[Lowpass Filter ca. 700 Hz] --> D
+C[Right IN]-- -2 db -->H[Highshelf Filter ca. 950 Hz +2 dB]-->D[Right OUT]
+C -- -8 dB --> F[Lowpass Filter ca. 700 Hz] -->B
 ```
 
 At the moment there is only one option which is based on the analogue implementation by [Pow Chu Moy](https://jourshifi.wordpress.com/2016/03/17/the-hero-of-diy-audio-pow-chu-moy/) who designed an [An Acoustic Simulator For Headphone Amplifiers](https://headwizememorial.wordpress.com/2018/03/09/an-acoustic-simulator-for-headphone-amplifiers/) which in turn is based on the (to my knowledge) first published implementation by [Siegfried Linkwitz](https://en.wikipedia.org/wiki/Siegfried_Linkwitz) which was published as [Improved Headphone Listening](https://www.linkwitzlab.com/headphone-xfeed.htm) 1973 in Audio.
