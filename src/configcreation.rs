@@ -185,8 +185,8 @@ fn build_crossfeed(configuration: &mut Configuration, crossfeed: Crossfeed) -> R
 
 fn add_preset_mixers(configuration: &mut Configuration) -> Result<()> {
     let crossfeed_mixers: HashMap<String, Mixer> =
-        serde_yaml::from_slice(include_bytes!("crossfeed_mixer.yml"))
-            .context("crossfeed_mixer.yml could not be serialized.")?;
+        serde_yaml::from_slice(include_bytes!("data/crossfeed_mixers.yml"))
+            .context("crossfeed_mixers.yml could not be serialized.")?;
     configuration.add_mixers(crossfeed_mixers);
     Ok(())
 }
@@ -295,7 +295,7 @@ pub fn write_yml_file(
 
 fn get_devices(devices: DevicesFile) -> Result<String> {
     let devices_config = match devices {
-        DevicesFile::Default => include_str!("devices.yml").to_string(),
+        DevicesFile::Default => include_str!("data/default_devices.yml").to_string(),
         DevicesFile::Custom(path) => {
             let mut file =
                 File::open(path).context("Could not open file with custom devices section.")?;
