@@ -288,6 +288,10 @@ pub fn write_yml_file(
 ) -> Result<()> {
     let devices_config = get_devices(devices)?;
     let mut config_file = create_config_file(headphone_name)?;
+    write_lines_to_file(
+        &mut config_file,
+        include_str!("data/header.yml").to_string(),
+    )?;
     write_lines_to_file(&mut config_file, devices_config)?;
     serialize_and_write_yaml(&mut config_file, &configuration)?;
     Ok(())
