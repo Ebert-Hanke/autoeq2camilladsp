@@ -37,16 +37,13 @@ impl Link {
     }
 }
 
-pub async fn scrape_database(
-    client: &reqwest::Client,
-    url: &String,
-) -> Result<HashMap<String, String>> {
+pub async fn scrape_links(client: &reqwest::Client, url: &str) -> Result<HashMap<String, String>> {
     let html = get_html(client, url).await?;
     let links = filter_links(html);
     Ok(links)
 }
 
-async fn get_html(client: &reqwest::Client, url: &String) -> Result<Html> {
+async fn get_html(client: &reqwest::Client, url: &str) -> Result<Html> {
     let raw_result = client.get(url).send().await?.text().await?;
     let html = Html::parse_document(&raw_result);
     Ok(html)
@@ -58,7 +55,12 @@ fn filter_links(html: Html) -> HashMap<String, String> {
 
     for link in html.select(&select_a) {
         if let Some(url) = link.value().attr("href") {
-            let link_text = link.inner_html().to_lowercase().trim().to_string();
+            let link_text = link
+                .inner_html()
+                .to_lowercase()
+                .trim()
+                .replace("&amp;", "&")
+                .to_string();
             let link_url = url.trim().to_string();
             if !link_text.len() > 100
                 && !link_text.contains('<')
@@ -100,29 +102,29 @@ fn filter_links(html: Html) -> HashMap<String, String> {
 //     Ok(link_list)
 // }
 
-pub async fn collect_datafile_links(
-    client: &reqwest::Client,
-    url: &str,
-) -> Result<HashMap<String, String>> {
-    let mut link_list: HashMap<String, String> = HashMap::new();
-    let a_selector = Selector::parse("a").unwrap();
-    let raw_result = client.get(url).send().await?.text().await?;
-    let document = Html::parse_document(&raw_result);
-    for a in document.select(&a_selector) {
-        let link_text = a.inner_html().to_lowercase();
-        let link_url = match a.value().attr("href") {
-            Some(url) => url.to_string(),
-            _ => "Nor Url found.".to_string(),
-        };
-        if !link_text.len() > 100 && !link_text.contains('<') && !link_text.contains('>') {
-            link_list.insert(link_text, link_url);
-        }
-    }
+// pub async fn collect_datafile_links(
+//     client: &reqwest::Client,
+//     url: &str,
+// ) -> Result<HashMap<String, String>> {
+//     let mut link_list: HashMap<String, String> = HashMap::new();
+//     let a_selector = Selector::parse("a").unwrap();
+//     let raw_result = client.get(url).send().await?.text().await?;
+//     let document = Html::parse_document(&raw_result);
+//     for a in document.select(&a_selector) {
+//         let link_text = a.inner_html().to_lowercase();
+//         let link_url = match a.value().attr("href") {
+//             Some(url) => url.to_string(),
+//             _ => "Nor Url found.".to_string(),
+//         };
+//         if !link_text.len() > 100 && !link_text.contains('<') && !link_text.contains('>') {
+//             link_list.insert(link_text, link_url);
+//         }
+//     }
 
-    Ok(link_list)
-}
+//     Ok(link_list)
+// }
 
-pub fn filter_link_list(link_list: &HashMap<String, String>, query: &String) -> QueryResult {
+pub fn filter_link_list(link_list: &HashMap<String, String>, query: &str) -> QueryResult {
     match link_list.get(&query.to_lowercase()) {
         Some(url) => {
             println!("Great! The {} could be found in AutoEq.", query);

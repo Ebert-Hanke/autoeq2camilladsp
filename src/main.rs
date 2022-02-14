@@ -8,9 +8,7 @@ use indicatif::ProgressBar;
 use serde::Deserialize;
 
 use configcreation::{build_configuration, write_yml_file, Crossfeed, DevicesFile};
-use scraping::{
-    collect_datafile_links, parse_filter_line, pick_url, scrape_database, CorrectionFilterSet,
-};
+use scraping::{parse_filter_line, pick_url, scrape_links, CorrectionFilterSet};
 use userinterface::{Cli, CliTheme};
 
 #[derive(Debug, Deserialize)]
@@ -29,7 +27,7 @@ impl Config {
     fn repo_url(&self) -> String {
         format!("{}{}", self.github_url, self.repo_url)
     }
-    fn headphone_url(&self, headphone_result: &String) -> String {
+    fn headphone_url(&self, headphone_result: &str) -> String {
         format!("{}{}", self.github_url, headphone_result)
     }
 }
@@ -46,7 +44,7 @@ async fn main() -> Result<()> {
 
     Cli::welcome();
     progress_bar.set_message("Loading Database...");
-    let database_result_list = scrape_database(&client, &config.repo_url()).await?;
+    let database_result_list = scrape_links(&client, &config.repo_url()).await?;
     progress_bar.finish_with_message("...Database loaded.");
     println!();
 
@@ -55,7 +53,7 @@ async fn main() -> Result<()> {
 
     progress_bar.set_message("Loading EQ settings...");
     let headphone_query_link_list =
-        collect_datafile_links(&client, &config.headphone_url(&cli.headphone_url)).await?;
+        scrape_links(&client, &config.headphone_url(&cli.headphone_url)).await?;
     progress_bar.finish_with_message("...EQ settings loaded.");
     println!();
 

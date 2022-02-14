@@ -95,7 +95,8 @@ impl Cli {
             }
         })
         .interact_text()?;
-        Ok(self.headphone = headphone_query)
+        self.headphone = headphone_query;
+        Ok(())
     }
 
     pub fn query_database(&mut self, database: &HashMap<String, String>) -> Result<()> {
@@ -115,8 +116,11 @@ impl Cli {
                     .default(0)
                     .items(&suggestions[..])
                     .interact()?;
-                match filter_link_list(&database, &suggestions[selection]) {
-                    QueryResult::Success(link) => link.url,
+                match filter_link_list(database, &suggestions[selection]) {
+                    QueryResult::Success(link) => {
+                        self.headphone = link.name;
+                        link.url
+                    }
                     _ => std::process::exit(0),
                 }
             }
