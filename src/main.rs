@@ -2,133 +2,64 @@ mod configcreation;
 mod scraping;
 mod userinterface;
 
-use anyhow::Result;
-use console::{style, Style};
+use anyhow::{Context, Result};
 use dialoguer::{theme::ColorfulTheme, Confirm, Input, Select};
 use indicatif::ProgressBar;
-use std::fs::File;
+use serde::Deserialize;
 
 use configcreation::{build_configuration, write_yml_file, Crossfeed, DevicesFile};
 use scraping::{
-    collect_datafile_links, filter_link_list, get_correction_result_list, parse_filter_line,
-    pick_url, scrape_database, CorrectionFilterSet, QueryResult,
+    collect_datafile_links, parse_filter_line, pick_url, scrape_database, CorrectionFilterSet,
 };
-use userinterface::{user_interface, CliTheme};
+use userinterface::{Cli, CliTheme};
 
-// url for Jaako Pasanen's AutoEq
-const GITHUB_URL: &str = "https://github.com";
-const REPO_URL: &str = "/jaakkopasanen/AutoEq/blob/master/results/";
-// query for ParametricEQ raw file
-const PARAM_EQ: &str = "ParametricEQ.txt";
+#[derive(Debug, Deserialize)]
+struct Config {
+    github_url: String,
+    github_raw: String,
+    repo_url: String,
+    parametric_eq_query: String,
+}
+impl Config {
+    fn load() -> Result<Self> {
+        let config: Config = serde_yaml::from_slice(include_bytes!("data/config.yml"))
+            .context("The configuration file could not be serialized")?;
+        Ok(config)
+    }
+    fn repo_url(&self) -> String {
+        format!("{}{}", self.github_url, self.repo_url)
+    }
+    fn headphone_url(&self, headphone_result: &String) -> String {
+        format!("{}{}", self.github_url, headphone_result)
+    }
+}
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    // setup
     let client = reqwest::Client::builder()
         .user_agent("AutoEq2CamillaDSP")
         .build()?;
     let progress_bar = ProgressBar::new_spinner();
+    let config = Config::load()?;
+    let mut cli = Cli::initialize();
 
-    user_interface();
-
+    Cli::welcome();
     progress_bar.set_message("Loading Database...");
-
-    let url = GITHUB_URL.to_owned() + REPO_URL;
-
-    let database_result_list = scrape_database(&client, &url).await?;
-    //let database_result_list = get_correction_result_list(&client, &url).await?;
-
+    let database_result_list = scrape_database(&client, &config.repo_url()).await?;
     progress_bar.finish_with_message("...Database loaded.");
     println!();
 
-    let headphone_query: String = Input::with_theme(&ColorfulTheme::clitheme())
-        .with_prompt("Which Headphones or IEMs do you want to EQ with AutoEq?")
-        .validate_with({
-            let mut force = None;
-            move|input: &String|->Result<(),&str>{
-                if input.len() > 1 || force.as_ref().map_or(false, |old|old==input){
-                    Ok(())
-                }else{
-                    force = Some(input.clone());
-                    Err("Please give me a bit more information, this is just one letter. Type the same value again to force use.")
-                }
-            }
-        })
-        .interact_text()?;
-
-    let query_result = match filter_link_list(&database_result_list, &headphone_query) {
-        QueryResult::Success(url) => {
-            println!(
-                "Great! The {} could be found in the AutoEq database.",
-                url.0
-            );
-            url
-        }
-        QueryResult::Suggestions(mut suggestions) => {
-            suggestions.push("Nope, nothing here for me ...".to_string());
-            let selection = Select::with_theme(&ColorfulTheme::clitheme())
-                .with_prompt("Maybe one of these is the one you are looking for?")
-                .default(0)
-                .items(&suggestions[..])
-                .interact()?;
-            match filter_link_list(&database_result_list, &suggestions[selection]) {
-                QueryResult::Success(url) => url,
-                _ => std::process::exit(0),
-            }
-        }
-        QueryResult::NotFound => {
-            println!(
-                "Sorry the {} or something similar could not be found in the AutoEq database.",
-                headphone_query
-            );
-            std::process::exit(0);
-        }
-    };
+    cli.query_headphone()?;
+    cli.query_database(&database_result_list)?;
 
     progress_bar.set_message("Loading EQ settings...");
-    let headphone_url = GITHUB_URL.to_owned() + &query_result.1;
-    let headphone_query_link_list = collect_datafile_links(&client, &headphone_url).await?;
+    let headphone_query_link_list =
+        collect_datafile_links(&client, &config.headphone_url(&cli.headphone_url)).await?;
     progress_bar.finish_with_message("...EQ settings loaded.");
     println!();
 
-    let custom_explainer: &str = r"
-You have the option to include a custom 'devices' section from a .yml file.
-If you do not choose to do so, the configuration will be created with a default 'devices' section.
-You then can edit this and use for future configurations.
-";
-
-    print!("{}", style(custom_explainer).magenta());
-    println!();
-
-    let custom_devices_query: bool = Confirm::with_theme(&ColorfulTheme::clitheme())
-        .with_prompt(
-            "Would you like to include a custom 'devices' section for your CamillaDSP config file?",
-        )
-        .interact()?;
-
-    let devices_file = match custom_devices_query {
-        true => {
-            let mut custom_device_path: String = Input::with_theme(&ColorfulTheme::clitheme())
-                .with_prompt("Please enter the relative path to your custom 'devices' file:")
-                .interact_text()?;
-            let mut valid = File::open(&custom_device_path);
-            while valid.is_err() {
-                custom_device_path = Input::with_theme(&ColorfulTheme::clitheme())
-                    .with_prompt(
-                        "Sorry this file does not seem to exist.\n
-If you want to quit, please enter 'q'\n
-Otherwise try again and enter the relative path to your custom 'devices' file:",
-                    )
-                    .interact_text()?;
-                if custom_device_path.to_lowercase().trim() == "q" {
-                    std::process::exit(0);
-                }
-                valid = File::open(&custom_device_path);
-            }
-            DevicesFile::Custom(custom_device_path)
-        }
-        false => DevicesFile::Default,
-    };
-
+    cli.query_custom_devices()?;
     println!();
 
     let crossfeed_query: bool = Confirm::with_theme(&ColorfulTheme::clitheme())
@@ -145,7 +76,7 @@ Otherwise try again and enter the relative path to your custom 'devices' file:",
     println!();
 
     progress_bar.set_message("Parsing AutoEq settings to CamillaDSP...");
-    match pick_url(headphone_query_link_list, PARAM_EQ) {
+    match pick_url(headphone_query_link_list, &config.parametric_eq_query) {
         Some(url) => {
             let eq_url =
                 "https://raw.githubusercontent.com".to_owned() + &url.1.replace("/blob", "");
@@ -174,7 +105,7 @@ Otherwise try again and enter the relative path to your custom 'devices' file:",
             });
 
             let configuration = build_configuration(headphone_correction, crossfeed)?;
-            write_yml_file(configuration, query_result.0, devices_file)?;
+            write_yml_file(configuration, cli.headphone, cli.devices)?;
 
             progress_bar.finish_with_message(
                 "...Your config for CamillaDSP was created successfully. Happy listening! :)",
