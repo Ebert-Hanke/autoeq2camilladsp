@@ -1,7 +1,9 @@
-use crate::configcreation::{BiquadParameters, PeakingWidth};
-use scraper::{Html, Selector};
+use anyhow::{Context, Result};
+use scraper::{html::Select, Html, Selector};
 use serde::Serialize;
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Deref};
+
+use crate::configcreation::{BiquadParameters, PeakingWidth};
 
 #[derive(Debug, Serialize)]
 pub struct CorrectionFilterSet {
@@ -17,10 +19,59 @@ impl CorrectionFilterSet {
     }
 }
 
+pub enum QueryResult {
+    Success((String, String)),
+    Suggestions(Vec<String>),
+    NotFound,
+}
+
+pub async fn scrape_database(
+    client: &reqwest::Client,
+    url: &String,
+) -> Result<HashMap<String, String>> {
+    let html = get_html(client, url).await?;
+    let links = filter_links(html);
+    Ok(links)
+}
+
+async fn get_html(client: &reqwest::Client, url: &String) -> Result<Html> {
+    let raw_result = client.get(url).send().await?.text().await?;
+    let html = Html::parse_document(&raw_result);
+    Ok(html)
+}
+
+fn filter_links(html: Html) -> HashMap<String, String> {
+    let mut link_list: HashMap<String, String> = HashMap::new();
+    let select_a = Selector::parse("a").unwrap();
+
+    for link in html.select(&select_a) {
+        if let Some(url) = link.value().attr("href") {
+            let link_text = link.inner_html().to_lowercase().trim().to_string();
+            let link_url = url.trim().to_string();
+            if !link_text.len() > 100
+                && !link_text.contains('<')
+                && !link_text.contains('>')
+                && link_url != "#"
+            {
+                link_list.insert(link_text, link_url);
+            }
+        };
+        //  let link_text = link.inner_html().to_lowercase().trim().to_string();
+        // let link_url = match link.value().attr("href") {
+        //     Some(url) => url.trim().to_string(),
+        //     None => "No url found.".to_string(),
+        // };
+        // if !link_text.len() > 100 && !link_text.contains('<') && !link_text.contains('>') {
+        //     link_list.insert(link_text, link_url);
+        // }
+    }
+    link_list
+}
+
 pub async fn get_correction_result_list(
     client: &reqwest::Client,
     url: &str,
-) -> Result<HashMap<String, String>, reqwest::Error> {
+) -> Result<HashMap<String, String>> {
     let mut link_list: HashMap<String, String> = HashMap::new();
     let ul_selector = Selector::parse("ul").unwrap();
     let li_selector = Selector::parse("li").unwrap();
@@ -48,7 +99,7 @@ pub async fn get_correction_result_list(
 pub async fn collect_datafile_links(
     client: &reqwest::Client,
     url: &str,
-) -> Result<HashMap<String, String>, reqwest::Error> {
+) -> Result<HashMap<String, String>> {
     let mut link_list: HashMap<String, String> = HashMap::new();
     let a_selector = Selector::parse("a").unwrap();
     let raw_result = client.get(url).send().await?.text().await?;
@@ -65,12 +116,6 @@ pub async fn collect_datafile_links(
     }
 
     Ok(link_list)
-}
-
-pub enum QueryResult {
-    Success((String, String)),
-    Suggestions(Vec<String>),
-    NotFound,
 }
 
 pub fn filter_link_list(link_list: &HashMap<String, String>, query: &str) -> QueryResult {

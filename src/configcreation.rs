@@ -1,4 +1,4 @@
-use crate::{scraping::CorrectionFilterSet, DevicesFile};
+use crate::scraping::CorrectionFilterSet;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -154,6 +154,11 @@ impl GainParameters {
 enum PipelineStep {
     Mixer { name: String },
     Filter { channel: usize, names: Vec<String> },
+}
+
+pub enum DevicesFile {
+    Default,
+    Custom(String),
 }
 
 pub enum Crossfeed {

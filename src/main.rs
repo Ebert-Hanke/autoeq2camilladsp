@@ -1,70 +1,25 @@
 mod configcreation;
 mod scraping;
+mod userinterface;
 
 use anyhow::Result;
-use configcreation::{build_configuration, write_yml_file, Crossfeed};
 use console::{style, Style};
 use dialoguer::{theme::ColorfulTheme, Confirm, Input, Select};
 use indicatif::ProgressBar;
+use std::fs::File;
+
+use configcreation::{build_configuration, write_yml_file, Crossfeed, DevicesFile};
 use scraping::{
     collect_datafile_links, filter_link_list, get_correction_result_list, parse_filter_line,
-    pick_url, CorrectionFilterSet, QueryResult,
+    pick_url, scrape_database, CorrectionFilterSet, QueryResult,
 };
-use std::fs::File;
+use userinterface::{user_interface, CliTheme};
 
 // url for Jaako Pasanen's AutoEq
 const GITHUB_URL: &str = "https://github.com";
 const REPO_URL: &str = "/jaakkopasanen/AutoEq/blob/master/results/";
 // query for ParametricEQ raw file
 const PARAM_EQ: &str = "ParametricEQ.txt";
-
-const LOGO: &str = r"
-            _                   _       
-  __ _ _  _| |_ ___  ___ __ _  | |_ ___ 
- / _` | || |  _/ _ \/ -_) _` | |  _/ _ \
- \__,_|\_,_|\__\___/\___\__, |_ \__\___/
-  __ __ _ _ __ (_) | |__ _ |_| |____ __ 
- / _/ _` | '  \| | | / _` / _` (_-< '_ \
- \__\__,_|_|_|_|_|_|_\__,_\__,_/__/ .__/
-  v0.2.0                          |_|   
-
-";
-
-pub trait CliTheme {
-    fn clitheme() -> Self;
-}
-impl CliTheme for ColorfulTheme {
-    fn clitheme() -> ColorfulTheme {
-        ColorfulTheme {
-            defaults_style: Style::new().for_stderr().magenta(),
-            prompt_style: Style::new().for_stderr().magenta().bold(),
-            prompt_prefix: style("?".to_string()).for_stderr().yellow(),
-            prompt_suffix: style("›".to_string()).for_stderr().black().bright(),
-            success_prefix: style("✓".to_string()).for_stderr().green(),
-            success_suffix: style("·".to_string()).for_stderr().black().bright(),
-            error_prefix: style("✕".to_string()).for_stderr().red(),
-            error_style: Style::new().for_stderr().red(),
-            hint_style: Style::new().for_stderr().black().bright(),
-            values_style: Style::new().for_stderr().green(),
-            active_item_style: Style::new().for_stderr().magenta(),
-            inactive_item_style: Style::new().for_stderr(),
-            active_item_prefix: style("❯".to_string()).for_stderr().yellow(),
-            inactive_item_prefix: style(" ".to_string()).for_stderr(),
-            checked_item_prefix: style("✓".to_string()).for_stderr().green(),
-            unchecked_item_prefix: style("✓".to_string()).for_stderr().black(),
-            picked_item_prefix: style("❯".to_string()).for_stderr().yellow(),
-            unpicked_item_prefix: style(" ".to_string()).for_stderr(),
-            #[cfg(feature = "fuzzy-select")]
-            fuzzy_cursor_style: Style::new().for_stderr().black().on_white(),
-            inline_selections: true,
-        }
-    }
-}
-
-pub enum DevicesFile {
-    Default,
-    Custom(String),
-}
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -73,13 +28,14 @@ async fn main() -> Result<()> {
         .build()?;
     let progress_bar = ProgressBar::new_spinner();
 
-    print!("{}", style(LOGO).magenta().bold());
-    println!();
+    user_interface();
 
     progress_bar.set_message("Loading Database...");
 
     let url = GITHUB_URL.to_owned() + REPO_URL;
-    let database_result_list = get_correction_result_list(&client, &url).await?;
+
+    let database_result_list = scrape_database(&client, &url).await?;
+    //let database_result_list = get_correction_result_list(&client, &url).await?;
 
     progress_bar.finish_with_message("...Database loaded.");
     println!();
