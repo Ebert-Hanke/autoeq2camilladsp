@@ -1,4 +1,4 @@
-use crate::{scraping::CorrectionFilterSet, DevicesFile};
+use crate::scraping::CorrectionFilterSet;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -156,6 +156,13 @@ enum PipelineStep {
     Filter { channel: usize, names: Vec<String> },
 }
 
+#[derive(Debug)]
+pub enum DevicesFile {
+    Default,
+    Custom(String),
+}
+
+#[derive(Debug)]
 pub enum Crossfeed {
     None,
     PowChuMoy,
