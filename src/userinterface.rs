@@ -1,12 +1,11 @@
 use crate::{
     configcreation::{Crossfeed, DevicesFile},
-    scraping::{filter_link_list, Link, QueryResult},
+    scraping::{filter_link_list, QueryResult},
 };
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use console::{style, Style};
 use dialoguer::{theme::ColorfulTheme, Confirm, Input, Select};
-use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, env, fs::File};
 
 pub trait CliTheme {
@@ -99,7 +98,8 @@ impl Cli {
         Ok(())
     }
 
-    pub fn query_database(&mut self, database: &HashMap<String, String>) -> Result<()> {
+    pub fn consult_database(&mut self, database: &HashMap<String, String>) -> Result<()> {
+        println!();
         self.headphone_query_result = filter_link_list(database, &self.headphone);
         self.headphone_url = match &mut self.headphone_query_result {
             QueryResult::Success(link) => {
@@ -132,6 +132,7 @@ impl Cli {
                 std::process::exit(0);
             }
         };
+        println!();
         Ok(())
     }
 
@@ -141,6 +142,7 @@ You have the option to include a custom 'devices' section from a .yml file.
 If you do not choose to do so, the configuration will be created with a default 'devices' section.
 You then can edit this and use for future configurations.
 ";
+        println!();
         print!("{}", style(custom_explainer).magenta());
         println!();
 
@@ -173,6 +175,23 @@ Otherwise try again and enter the relative path to your custom 'devices' file:",
             }
             false => DevicesFile::Default,
         };
+        println!();
+        Ok(())
+    }
+
+    pub fn query_crossfeed(&mut self) -> Result<()> {
+        println!();
+        let crossfeed_query: bool = Confirm::with_theme(&ColorfulTheme::clitheme())
+        .with_prompt(
+            "Would you like to include Crossfeed modeled after the analogue implementation by Pow Chu Moy?"
+        )
+        .interact()?;
+
+        self.crossfeed = match crossfeed_query {
+            true => Crossfeed::PowChuMoy,
+            false => Crossfeed::None,
+        };
+        println!();
         Ok(())
     }
 }
