@@ -87,7 +87,9 @@ pub fn filter_link_list(link_list: &HashMap<String, String>, query: &str) -> Que
                 .to_lowercase()
                 .split_whitespace()
                 .into_iter()
-                .for_each(|part| suggestions.retain(|key| key.to_lowercase().contains(part)));
+                .for_each(|part| {
+                    suggestions.retain(|key| key.to_lowercase().replace(" ", "").contains(part))
+                });
             if !suggestions.is_empty() {
                 return QueryResult::Suggestions(suggestions);
             }
