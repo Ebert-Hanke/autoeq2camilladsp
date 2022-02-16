@@ -3,6 +3,7 @@ mod scraping;
 mod userinterface;
 
 use anyhow::{Context, Result};
+use console::style;
 use indicatif::ProgressBar;
 use serde::Deserialize;
 
@@ -34,6 +35,11 @@ impl Config {
     }
 }
 
+fn format_msg(msg: &str, cli: &Cli) -> String {
+    let msg = msg.replace("{}", &cli.headphone);
+    format!("\n{}", style(msg).magenta().bold())
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     // setup
@@ -45,38 +51,43 @@ async fn main() -> Result<()> {
     let mut cli = Cli::initialize();
 
     Cli::welcome();
-    progress_bar.set_message("Loading Database...");
+    progress_bar.set_message(format_msg("Loading Database...", &cli));
     let database_result_list = scrape_links(&client, &config.repo_url()).await?;
-    progress_bar.finish_with_message("...Database loaded.");
+    progress_bar.finish_with_message(format_msg("...Database loaded.", &cli));
 
-    cli.query_headphone()?;
-    cli.consult_database(&database_result_list)?;
+    cli.select_headphone(&database_result_list)?;
 
-    progress_bar.set_message("Loading EQ settings...");
+    progress_bar.set_message(format_msg("Loading EQ settings for {}...", &cli));
     let headphone_query_link_list =
         scrape_links(&client, &config.headphone_url(&cli.headphone_url)).await?;
-    progress_bar.finish_with_message("...EQ settings loaded.");
+    progress_bar.finish_with_message(format_msg("...EQ settings for {} loaded.", &cli));
 
     cli.query_custom_devices()?;
 
     cli.query_crossfeed()?;
 
-    progress_bar.set_message("Parsing AutoEq settings to CamillaDSP...");
+    progress_bar.set_message(format_msg(
+        "Parsing AutoEq settings for {} to CamillaDSP...",
+        &cli,
+    ));
 
     let filterset = scrape_eq_settings(headphone_query_link_list, &client, &config).await;
 
     match filterset {
         Ok(filterset) => {
-            let configuration = build_configuration(filterset, cli.crossfeed)?;
-            write_yml_file(configuration, cli.headphone, cli.devices)?;
+            let configuration = build_configuration(filterset, &cli.crossfeed)?;
+            write_yml_file(configuration, &cli.headphone, &cli.devices)?;
 
-            progress_bar.finish_with_message(
+            progress_bar.finish_with_message(format_msg(
                 "...Your config for CamillaDSP was created successfully. Happy listening! :)",
-            );
+                &cli,
+            ));
         }
         Err(error) => {
-            let msg = format!("...Something went wrong unfortunately :(\n{}", error);
-            progress_bar.finish_with_message(msg);
+            progress_bar.finish_with_message(format!(
+                "...Something went wrong unfortunately :(\n{}",
+                error
+            ));
         }
     }
     Ok(())

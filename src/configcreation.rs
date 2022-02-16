@@ -170,7 +170,7 @@ pub enum Crossfeed {
 
 pub fn build_configuration(
     eq_data: CorrectionFilterSet,
-    crossfeed: Crossfeed,
+    crossfeed: &Crossfeed,
 ) -> Result<Configuration> {
     let mut configuration = Configuration::new();
     build_crossfeed(&mut configuration, crossfeed)?;
@@ -178,7 +178,7 @@ pub fn build_configuration(
     Ok(configuration)
 }
 
-fn build_crossfeed(configuration: &mut Configuration, crossfeed: Crossfeed) -> Result<()> {
+fn build_crossfeed(configuration: &mut Configuration, crossfeed: &Crossfeed) -> Result<()> {
     match crossfeed {
         Crossfeed::None => (),
         Crossfeed::PowChuMoy => {
@@ -290,8 +290,8 @@ fn add_correction_eq_filtes(configuration: &mut Configuration, data: CorrectionF
 
 pub fn write_yml_file(
     configuration: Configuration,
-    headphone_name: String,
-    devices: DevicesFile,
+    headphone_name: &str,
+    devices: &DevicesFile,
 ) -> Result<()> {
     let devices_config = get_devices(devices)?;
     let mut config_file = create_config_file(headphone_name)?;
@@ -304,7 +304,7 @@ pub fn write_yml_file(
     Ok(())
 }
 
-fn get_devices(devices: DevicesFile) -> Result<String> {
+fn get_devices(devices: &DevicesFile) -> Result<String> {
     let devices_config = match devices {
         DevicesFile::Default => include_str!("data/default_devices.yml").to_string(),
         DevicesFile::Custom(path) => {
@@ -319,7 +319,7 @@ fn get_devices(devices: DevicesFile) -> Result<String> {
     Ok(devices_config)
 }
 
-fn create_config_file(headphone_name: String) -> Result<File> {
+fn create_config_file(headphone_name: &str) -> Result<File> {
     let filename = format!("{}-EQ.yml", headphone_name.replace(" ", "_"));
     let mut config_file = File::create(filename).context("Could not create configuration file.")?;
     writeln!(config_file, "---").context("Could not write to configuration file.")?;
