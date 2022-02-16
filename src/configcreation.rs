@@ -94,12 +94,12 @@ pub enum BiquadParameters {
         q: f32,
     },
     Peaking(PeakingWidth),
-    // for future use
-    #[allow(dead_code)]
     HighshelfFO {
         freq: f32,
         gain: f32,
     },
+    // for future use
+    #[allow(dead_code)]
     LowshelfFO {
         freq: f32,
         gain: f32,
