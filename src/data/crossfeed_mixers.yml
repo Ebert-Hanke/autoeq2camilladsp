@@ -7,28 +7,28 @@
       mute: false
       sources:
       - channel: 0
-        gain: 0
+        gain: -8
         inverted: false
         mute: false
     - dest: 1
       mute: false
       sources:
       - channel: 0
-        gain: 0
+        gain: -2
         inverted: false
         mute: false
     - dest: 2
       mute: false
       sources:
       - channel: 1
-        gain: 0
+        gain: -2
         inverted: false
         mute: false
     - dest: 3
       mute: false
       sources:
       - channel: 1
-        gain: 0
+        gain: -8
         inverted: false
         mute: false
   XF_OUT:
