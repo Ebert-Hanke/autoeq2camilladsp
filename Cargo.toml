@@ -1,6 +1,6 @@
 [package]
 name = "autoeq2camilladsp"
-version = "0.2.1"
+version = "0.3.0"
 authors = ["Micha Ebert-Hanke <michael@ebert-hanke.de>"]
 description = "a simple tool to generate a CamillaDSP config based on correction data from the AutoEq repository"
 readme = "README.md"
