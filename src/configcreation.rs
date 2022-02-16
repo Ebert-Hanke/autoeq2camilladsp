@@ -94,12 +94,12 @@ pub enum BiquadParameters {
         q: f32,
     },
     Peaking(PeakingWidth),
-    // for future use
-    #[allow(dead_code)]
     HighshelfFO {
         freq: f32,
         gain: f32,
     },
+    // for future use
+    #[allow(dead_code)]
     LowshelfFO {
         freq: f32,
         gain: f32,
@@ -170,7 +170,7 @@ pub enum Crossfeed {
 
 pub fn build_configuration(
     eq_data: CorrectionFilterSet,
-    crossfeed: Crossfeed,
+    crossfeed: &Crossfeed,
 ) -> Result<Configuration> {
     let mut configuration = Configuration::new();
     build_crossfeed(&mut configuration, crossfeed)?;
@@ -178,7 +178,7 @@ pub fn build_configuration(
     Ok(configuration)
 }
 
-fn build_crossfeed(configuration: &mut Configuration, crossfeed: Crossfeed) -> Result<()> {
+fn build_crossfeed(configuration: &mut Configuration, crossfeed: &Crossfeed) -> Result<()> {
     match crossfeed {
         Crossfeed::None => (),
         Crossfeed::PowChuMoy => {
@@ -201,12 +201,6 @@ fn add_preset_mixers(configuration: &mut Configuration) -> Result<()> {
 fn add_crossfeed_filters(configuration: &mut Configuration) {
     let mut crossfeed_filters = BTreeMap::new();
     crossfeed_filters.insert(
-        "XF_Cross_Gain".to_string(),
-        Filter::Gain {
-            parameters: GainParameters::new(-8.0),
-        },
-    );
-    crossfeed_filters.insert(
         "XF_Cross_Lowpass".to_string(),
         Filter::Biquad {
             parameters: BiquadParameters::Lowpass {
@@ -216,11 +210,11 @@ fn add_crossfeed_filters(configuration: &mut Configuration) {
         },
     );
     crossfeed_filters.insert(
-        "XF_Direct_LowShelf".to_string(),
+        "XF_Direct_HighShelf".to_string(),
         Filter::Biquad {
-            parameters: BiquadParameters::LowshelfFO {
-                freq: 900.0,
-                gain: -2.0,
+            parameters: BiquadParameters::HighshelfFO {
+                freq: 950.0,
+                gain: 2.0,
             },
         },
     );
@@ -238,19 +232,19 @@ fn add_crossfeed_pipeline(configuration: &mut Configuration) {
         },
         PipelineStep::Filter {
             channel: 0,
-            names: vec_of_strings!["XF_Cross_Gain", "XF_Cross_Lowpass"],
+            names: vec_of_strings!["XF_Cross_Lowpass"],
         },
         PipelineStep::Filter {
             channel: 1,
-            names: vec_of_strings!["XF_Direct_LowShelf"],
+            names: vec_of_strings!["XF_Direct_HighShelf"],
         },
         PipelineStep::Filter {
             channel: 2,
-            names: vec_of_strings!["XF_Direct_LowShelf"],
+            names: vec_of_strings!["XF_Direct_HighShelf"],
         },
         PipelineStep::Filter {
             channel: 3,
-            names: vec_of_strings!["XF_Cross_Gain", "XF_Cross_Lowpass"],
+            names: vec_of_strings!["XF_Cross_Lowpass"],
         },
         PipelineStep::Mixer {
             name: "XF_OUT".to_string(),
@@ -290,8 +284,8 @@ fn add_correction_eq_filtes(configuration: &mut Configuration, data: CorrectionF
 
 pub fn write_yml_file(
     configuration: Configuration,
-    headphone_name: String,
-    devices: DevicesFile,
+    headphone_name: &str,
+    devices: &DevicesFile,
 ) -> Result<()> {
     let devices_config = get_devices(devices)?;
     let mut config_file = create_config_file(headphone_name)?;
@@ -304,7 +298,7 @@ pub fn write_yml_file(
     Ok(())
 }
 
-fn get_devices(devices: DevicesFile) -> Result<String> {
+fn get_devices(devices: &DevicesFile) -> Result<String> {
     let devices_config = match devices {
         DevicesFile::Default => include_str!("data/default_devices.yml").to_string(),
         DevicesFile::Custom(path) => {
@@ -319,7 +313,7 @@ fn get_devices(devices: DevicesFile) -> Result<String> {
     Ok(devices_config)
 }
 
-fn create_config_file(headphone_name: String) -> Result<File> {
+fn create_config_file(headphone_name: &str) -> Result<File> {
     let filename = format!("{}-EQ.yml", headphone_name.replace(" ", "_"));
     let mut config_file = File::create(filename).context("Could not create configuration file.")?;
     writeln!(config_file, "---").context("Could not write to configuration file.")?;

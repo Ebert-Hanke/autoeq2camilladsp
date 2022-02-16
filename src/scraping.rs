@@ -21,13 +21,6 @@ impl CorrectionFilterSet {
 }
 
 #[derive(Debug)]
-pub enum QueryResult {
-    Success(Link),
-    Suggestions(Vec<String>),
-    NotFound,
-}
-
-#[derive(Debug)]
 pub struct Link {
     pub name: String,
     pub url: String,
@@ -75,27 +68,10 @@ fn filter_links(html: Html) -> HashMap<String, String> {
     link_list
 }
 
-pub fn filter_link_list(link_list: &HashMap<String, String>, query: &str) -> QueryResult {
-    match link_list.get(&query.to_lowercase()) {
-        Some(url) => {
-            println!("Great! The {} could be found in AutoEq.", query);
-            QueryResult::Success(Link::new(query.to_string(), url.to_string()))
-        }
-        None => {
-            let mut suggestions: Vec<String> = link_list.keys().cloned().collect();
-            query
-                .to_lowercase()
-                .split_whitespace()
-                .into_iter()
-                .for_each(|part| {
-                    suggestions.retain(|key| key.to_lowercase().replace(" ", "").contains(part))
-                });
-            if !suggestions.is_empty() {
-                return QueryResult::Suggestions(suggestions);
-            }
-            QueryResult::NotFound
-        }
-    }
+pub fn filter_link_list(link_list: &HashMap<String, String>, query: &str) -> Option<Link> {
+    link_list
+        .get(&query.to_lowercase())
+        .map(|url| Link::new(query.to_string(), url.to_string()))
 }
 
 pub async fn scrape_eq_settings(

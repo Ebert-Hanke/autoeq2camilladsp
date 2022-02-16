@@ -1,12 +1,12 @@
 use crate::{
     configcreation::{Crossfeed, DevicesFile},
-    scraping::{filter_link_list, QueryResult},
+    scraping::filter_link_list,
 };
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use console::{style, Style};
-use dialoguer::{theme::ColorfulTheme, Confirm, Input, Select};
-use std::{collections::HashMap, env, fs::File};
+use dialoguer::{theme::ColorfulTheme, Confirm, FuzzySelect, Input};
+use std::{collections::HashMap, env, fs::File, thread, time::Duration};
 
 pub trait CliTheme {
     fn clitheme() -> Self;
@@ -32,7 +32,6 @@ impl CliTheme for ColorfulTheme {
             unchecked_item_prefix: style("✓".to_string()).for_stderr().black(),
             picked_item_prefix: style("❯".to_string()).for_stderr().yellow(),
             unpicked_item_prefix: style(" ".to_string()).for_stderr(),
-            #[cfg(feature = "fuzzy-select")]
             fuzzy_cursor_style: Style::new().for_stderr().black().on_white(),
             inline_selections: true,
         }
@@ -42,7 +41,6 @@ impl CliTheme for ColorfulTheme {
 #[derive(Debug)]
 pub struct Cli {
     pub headphone: String,
-    pub headphone_query_result: QueryResult,
     pub headphone_url: String,
     pub devices: DevicesFile,
     pub crossfeed: Crossfeed,
@@ -51,7 +49,6 @@ impl Cli {
     pub fn initialize() -> Self {
         Cli {
             headphone: String::new(),
-            headphone_query_result: QueryResult::NotFound,
             headphone_url: String::new(),
             devices: DevicesFile::Default,
             crossfeed: Crossfeed::None,
@@ -70,70 +67,45 @@ impl Cli {
  \__\__,_|_|_|_|_|_|_\__,_\__,_/__/ .__/
                                   |_|    
   {}
+
+---------------------------------------------
+ Make your Headphones or IEMs more enjoyable
+ with AutoEq and Crossfeed
+---------------------------------------------
+
+
 ",
             env!("CARGO_PKG_VERSION")
         );
 
         print!("{}", style(logo).magenta().bold());
-        println!("Make your Headphones or IEMs more enjoyable with AutoEq and Crossfeed");
-        println!();
+        thread::sleep(Duration::from_millis(2000));
     }
 
-    pub fn query_headphone(&mut self) -> Result<()> {
-        let headphone_query: String = Input::with_theme(&ColorfulTheme::clitheme())
-        .with_prompt("Which Headphones or IEMs do you want to EQ with AutoEq?")
-        .validate_with({
-            let mut force = None;
-            move|input: &String|->Result<(),&str>{
-                if input.len() > 1 || force.as_ref().map_or(false, |old|old==input){
-                    Ok(())
-                }else{
-                    force = Some(input.clone());
-                    Err("Please give me a bit more information, this is just one letter. Type the same value again to force use.")
-                }
-            }
-        })
-        .interact_text()?;
-        self.headphone = headphone_query;
-        Ok(())
-    }
-
-    pub fn consult_database(&mut self, database: &HashMap<String, String>) -> Result<()> {
+    pub fn select_headphone(&mut self, database: &HashMap<String, String>) -> Result<()> {
+        let mut suggestions: Vec<String> = database.keys().cloned().collect();
+        suggestions.push("Exit".to_string());
         println!();
-        self.headphone_query_result = filter_link_list(database, &self.headphone);
-        self.headphone_url = match &mut self.headphone_query_result {
-            QueryResult::Success(link) => {
-                println!(
-                    "Great! The {} could be found in the AutoEq database.",
-                    link.name
-                );
-                link.url.to_string()
+        let selection = FuzzySelect::with_theme(&ColorfulTheme::clitheme())
+            .with_prompt("Pick your device. Start typing to narrow down or type 'Exit' to quit.")
+            .default(0)
+            .items(&suggestions)
+            .interact()?;
+        if suggestions[selection] == "Exit" {
+            std::process::exit(0);
+        }
+        let headphone_link = filter_link_list(database, &suggestions[selection]);
+        match headphone_link {
+            Some(link) => {
+                self.headphone = link.name;
+                self.headphone_url = link.url;
+                println!();
+                Ok(())
             }
-            QueryResult::Suggestions(suggestions) => {
-                suggestions.push("Nope, nothing here for me ...".to_string());
-                let selection = Select::with_theme(&ColorfulTheme::clitheme())
-                    .with_prompt("Maybe one of these is the one you are looking for?")
-                    .default(0)
-                    .items(&suggestions[..])
-                    .interact()?;
-                match filter_link_list(database, &suggestions[selection]) {
-                    QueryResult::Success(link) => {
-                        self.headphone = link.name;
-                        link.url
-                    }
-                    _ => std::process::exit(0),
-                }
-            }
-            QueryResult::NotFound => {
-                println!(
-                    "Sorry the {} or something similar could not be found in the AutoEq database.",
-                    self.headphone
-                );
-                std::process::exit(0);
-            }
-        };
-        println!();
-        Ok(())
+            None => Err(anyhow!(
+                "Something went wrong while accessing the database."
+            )),
+        }
     }
 
     pub fn query_custom_devices(&mut self) -> Result<()> {
