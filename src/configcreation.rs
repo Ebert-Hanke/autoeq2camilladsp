@@ -278,7 +278,7 @@ fn create_filename(headphone_name: &str, crossfeed: &Crossfeed) -> String {
         Crossfeed::PowChuMoy => "EQ-ChuMoy",
         Crossfeed::Mmp => "EQ-MMP",
     };
-    format!("{}-{}.yml", headphone_name.replace(' ', '_'), crossfeed)
+    format!("{}-{}.yml", headphone_name.replace(' ', "_"), crossfeed)
 }
 
 fn write_lines_to_file(file: &mut File, data: String) -> Result<()> {
