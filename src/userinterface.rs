@@ -5,7 +5,7 @@ use crate::{
 
 use anyhow::{anyhow, Result};
 use console::{style, Style};
-use dialoguer::{theme::ColorfulTheme, Confirm, FuzzySelect, Input};
+use dialoguer::{theme::ColorfulTheme, Confirm, FuzzySelect, Input, Select};
 use std::{collections::HashMap, env, fs::File, thread, time::Duration};
 
 pub trait CliTheme {
@@ -153,15 +153,20 @@ Otherwise try again and enter the relative path to your custom 'devices' file:",
 
     pub fn query_crossfeed(&mut self) -> Result<()> {
         println!();
-        let crossfeed_query: bool = Confirm::with_theme(&ColorfulTheme::clitheme())
+        let items = vec!["None", "Pow Chu Moy Crossfeed", "MMP Crossfeed"];
+        let crossfeed_query = Select::with_theme(&ColorfulTheme::clitheme())
         .with_prompt(
-            "Would you like to include Crossfeed modeled after the analogue implementation by Pow Chu Moy?"
+            "Please select the type of Crossfeed you would like to include in your configuration:"
         )
+        .items(&items)
+        .default(0)
         .interact()?;
 
         self.crossfeed = match crossfeed_query {
-            true => Crossfeed::PowChuMoy,
-            false => Crossfeed::None,
+            0 => Crossfeed::None,
+            1 => Crossfeed::PowChuMoy,
+            2 => Crossfeed::Mmp,
+            _ => Crossfeed::None,
         };
         println!();
         Ok(())
