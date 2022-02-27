@@ -1,10 +1,7 @@
 # AutoEq2CamillaDSP
 
-This is a simple CLI tool to easily create a configuration file for your Headphones or IEMs using Headphone-Correction-Data from Jaakko Pasanen's [AutoEq](https://github.com/jaakkopasanen/AutoEq) to use with Henrik Enquist's [CamillaDSP](https://github.com/HEnquist/camilladsp). `CamillaDSP` is no e.g included in [moOde audio player](https://github.com/moode-player/moode). Using it stand alone on all major systems is well documented in [Processing audio](https://github.com/HEnquist/camilladsp#processing-audio) of the documentation.
-
-## Things To Do
-- [ ] Include different Crossfeed options
-- [ ] Option to include Highshelf and/or Lowshelf with sensible defaults
+This is a simple CLI tool to easily create a configuration file for your Headphones or IEMs using Headphone-Correction-Data from Jaakko Pasanen's [AutoEq](https://github.com/jaakkopasanen/AutoEq) to use with Henrik Enquist's [CamillaDSP](https://github.com/HEnquist/camilladsp). `CamillaDSP` is e.g included in [moOde audio player](https://github.com/moode-player/moode).  
+Using it stand alone on all major systems is well documented in [Processing audio](https://github.com/HEnquist/camilladsp#processing-audio) of the documentation.
 
 ## Devices Section
 The CamillaDSP configuration starts with a `devices` section which will be specific to the equipment you are using. In order to include this section just put it in a `.yml` file and it can be read and added to your configuration.  
@@ -44,7 +41,7 @@ C[Right IN]-- -2 db -->H[Highshelf Filter 950 Hz +2 dB]-->D[Right OUT]
 C -- -8 dB --> F[Lowpass Filter 700 Hz] -->B
 ```
 
-This preset is based on the analogue implementation by [Pow Chu Moy](https://jourshifi.wordpress.com/2016/03/17/the-hero-of-diy-audio-pow-chu-moy/) who designed an [An Acoustic Simulator For Headphone Amplifiers](https://headwizememorial.wordpress.com/2018/03/09/an-acoustic-simulator-for-headphone-amplifiers/) which in turn is based on the implementation by [Siegfried Linkwitz](https://en.wikipedia.org/wiki/Siegfried_Linkwitz) which was published as [Improved Headphone Listening](https://www.linkwitzlab.com/headphone-xfeed.htm) 1973 in Audio.  
+This preset is based on the analogue implementation by [Pow Chu Moy](https://jourshifi.wordpress.com/2016/03/17/the-hero-of-diy-audio-pow-chu-moy/) who designed [An Acoustic Simulator For Headphone Amplifiers](https://headwizememorial.wordpress.com/2018/03/09/an-acoustic-simulator-for-headphone-amplifiers/) which in turn is based on the implementation by [Siegfried Linkwitz](https://en.wikipedia.org/wiki/Siegfried_Linkwitz) which was published as [Improved Headphone Listening](https://www.linkwitzlab.com/headphone-xfeed.htm) 1973 in Audio.  
 
 The DSP version of this draws from Boris Mikhaylov's [Bauer stereophonic-to-binuaral DSP / bs2b](http://bs2b.sourceforge.net) implementation in the widely used `bs2b`.  
 
@@ -52,9 +49,9 @@ The DSP version of this draws from Boris Mikhaylov's [Bauer stereophonic-to-binu
 ```mermaid
 graph LR
 A[Left IN]-- -2.3 dB --> G[Highshelf Filter 200 Hz +2.3 dB]--> B[Left OUT]
-A -- -9.9 dB --> E[Highshelf Filter 750 Hz -0.3 dB] --> G[Peaking EQ 180 Hz +0.5 dB Q 0.55] -->D 
+A -- -9.9 dB --> E[Highshelf Filter 750 Hz -0.3 dB] --> I[Peaking EQ 180 Hz +0.5 dB Q 0.55] -->D 
 C[Right IN]-- -2.3 db -->H[Highshelf Filter 200 Hz +2.3 dB]-->D[Right OUT]
-C -- -9.9 dB --> F[Highshelf Filter 750 Hz -0.3 dB] --> H[Peaking EQ 180 Hz +0.5 dB Q 0.55] -->B
+C -- -9.9 dB --> F[Highshelf Filter 750 Hz -0.3 dB] --> J[Peaking EQ 180 Hz +0.5 dB Q 0.55] -->B
 ```
 
 This preset is based on research and "reverse engineering" done by Mikhail Mnaganov and published on his blog [Electronic Projects](https://melp242.blogspot.com/) in [Reconstructing SPL Phonitor Mini Crossfeed with DSP](https://melp242.blogspot.com/2017/01/reconstructing-spl-phonitor-mini.html) in 2017.  
