@@ -29,7 +29,7 @@ Two my knowledge there are two main publications most implementation of crossfee
 - *Stereophonic Earphones and Binaural Loudspeakers* by [Benjamin B. Bauer](https://en.wikipedia.org/wiki/Benjamin_Bauer) published JAES Volume 9 Number 2 in 1961
 - [Improved Headphone Listening](https://www.linkwitzlab.com/headphone-xfeed.htm) by [Siegfried Linkwitz](https://en.wikipedia.org/wiki/Siegfried_Linkwitz) published in Audio in 1973  
 
-The most wide used DSP implementation of crossfeed might be Boris Mikhaylov's [Bauer stereophonic-to-binuaral DSP / bs2b](http://bs2b.sourceforge.net) or `bs2b`. Mikhaylov also provides a lot of interesting background, research and explanation on his design decissions for `bs2b`.
+The most widely used DSP implementation of crossfeed might be Boris Mikhaylov's [Bauer stereophonic-to-binuaral DSP / bs2b](http://bs2b.sourceforge.net) or `bs2b`. Mikhaylov also provides a lot of interesting background, research and explanation on his design decissions for `bs2b`.
 
 Two `CamillaDSP` related crossfeed projects worth looking into are Yue Wang's [camilladsp-crossfeed](https://github.com/Wang-Yue/camilladsp-crossfeed) and [CamillaDSP-Monitor](https://github.com/Wang-Yue/CamillaDSP-Monitor).
 
@@ -38,14 +38,28 @@ I can also highly recommend Mikhail Mnaganov's [Electronic Projects](https://mel
 ### Pow Chu Moy Crossfeed
 ```mermaid
 graph LR
-A[Left IN]-- -2 dB --> G[Highshelf Filter ca. 950 Hz +2 dB]--> B[Left OUT]
-A -- -8 dB --> E[Lowpass Filter ca. 700 Hz] --> D
-C[Right IN]-- -2 db -->H[Highshelf Filter ca. 950 Hz +2 dB]-->D[Right OUT]
-C -- -8 dB --> F[Lowpass Filter ca. 700 Hz] -->B
+A[Left IN]-- -2 dB --> G[Highshelf Filter 950 Hz +2 dB]--> B[Left OUT]
+A -- -8 dB --> E[Lowpass Filter 700 Hz] --> D
+C[Right IN]-- -2 db -->H[Highshelf Filter 950 Hz +2 dB]-->D[Right OUT]
+C -- -8 dB --> F[Lowpass Filter 700 Hz] -->B
 ```
 
 This preset is based on the analogue implementation by [Pow Chu Moy](https://jourshifi.wordpress.com/2016/03/17/the-hero-of-diy-audio-pow-chu-moy/) who designed an [An Acoustic Simulator For Headphone Amplifiers](https://headwizememorial.wordpress.com/2018/03/09/an-acoustic-simulator-for-headphone-amplifiers/) which in turn is based on the implementation by [Siegfried Linkwitz](https://en.wikipedia.org/wiki/Siegfried_Linkwitz) which was published as [Improved Headphone Listening](https://www.linkwitzlab.com/headphone-xfeed.htm) 1973 in Audio.  
 
 The DSP version of this draws from Boris Mikhaylov's [Bauer stereophonic-to-binuaral DSP / bs2b](http://bs2b.sourceforge.net) implementation in the widely used `bs2b`.  
+
+### MMP Crossfeed
+```mermaid
+graph LR
+A[Left IN]-- -2.3 dB --> G[Highshelf Filter 200 Hz +2.3 dB]--> B[Left OUT]
+A -- -9.9 dB --> E[Highshelf Filter 750 Hz -0.3 dB] --> G[Peaking EQ 180 Hz +0.5 dB Q 0.55] -->D 
+C[Right IN]-- -2.3 db -->H[Highshelf Filter 200 Hz +2.3 dB]-->D[Right OUT]
+C -- -9.9 dB --> F[Highshelf Filter 750 Hz -0.3 dB] --> H[Peaking EQ 180 Hz +0.5 dB Q 0.55] -->B
+```
+
+This preset is based on research and "reverse engineering" done by Mikhail Mnaganov and published on his blog [Electronic Projects](https://melp242.blogspot.com/) in [Reconstructing SPL Phonitor Mini Crossfeed with DSP](https://melp242.blogspot.com/2017/01/reconstructing-spl-phonitor-mini.html) in 2017.  
+I reached out to Mikhail who was so kind to contribute this implementation and also provide a lot of insight to my hobbyist research on the crossfeed topic in general. Thanks! 
+
+
 
 
