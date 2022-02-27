@@ -30,7 +30,7 @@ The most widely used DSP implementation of crossfeed might be Boris Mikhaylov's 
 
 Two `CamillaDSP` related crossfeed projects worth looking into are Yue Wang's [camilladsp-crossfeed](https://github.com/Wang-Yue/camilladsp-crossfeed) and [CamillaDSP-Monitor](https://github.com/Wang-Yue/CamillaDSP-Monitor).
 
-I can also highly recommend Mikhail Mnaganov's [Electronic Projects](https://melp242.blogspot.com/) blog which provides a lot of in depth information on various audio topics.
+I can also highly recommend Mikhail Naganov's [Electronic Projects](https://melp242.blogspot.com/) blog which provides a lot of in depth information on various audio topics.
 
 ### Pow Chu Moy Crossfeed
 ```mermaid
@@ -45,7 +45,7 @@ This preset is based on the analogue implementation by [Pow Chu Moy](https://jou
 
 The DSP version of this draws from Boris Mikhaylov's [Bauer stereophonic-to-binuaral DSP / bs2b](http://bs2b.sourceforge.net) implementation in the widely used `bs2b`.  
 
-### MMP Crossfeed
+### MPM Crossfeed
 ```mermaid
 graph LR
 A[Left IN]-- -2.3 dB --> G[Highshelf Filter 200 Hz +2.3 dB]--> B[Left OUT]
@@ -54,7 +54,7 @@ C[Right IN]-- -2.3 db -->H[Highshelf Filter 200 Hz +2.3 dB]-->D[Right OUT]
 C -- -9.9 dB --> F[Highshelf Filter 750 Hz -0.3 dB] --> J[Peaking EQ 180 Hz +0.5 dB Q 0.55] -->B
 ```
 
-This preset is based on research and "reverse engineering" done by Mikhail Mnaganov and published on his blog [Electronic Projects](https://melp242.blogspot.com/) in [Reconstructing SPL Phonitor Mini Crossfeed with DSP](https://melp242.blogspot.com/2017/01/reconstructing-spl-phonitor-mini.html) in 2017.  
+This preset is based on research and "reverse engineering" done by Mikhail Naganov and published on his blog [Electronic Projects](https://melp242.blogspot.com/) in [Reconstructing SPL Phonitor Mini Crossfeed with DSP](https://melp242.blogspot.com/2017/01/reconstructing-spl-phonitor-mini.html) in 2017.  
 I reached out to Mikhail who was so kind to contribute this implementation and also provide a lot of insight to my hobbyist research on the crossfeed topic in general. Thanks! 
 
 

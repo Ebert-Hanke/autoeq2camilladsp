@@ -8,7 +8,7 @@ use std::{
 };
 
 static POWCHUMOY: &[u8] = include_bytes!("data/pow_chu_moy.yml");
-static MMP: &[u8] = include_bytes!("data/mmp.yml");
+static MPM: &[u8] = include_bytes!("data/mpm.yml");
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Configuration {
@@ -169,7 +169,7 @@ pub enum DevicesFile {
 pub enum Crossfeed {
     None,
     PowChuMoy,
-    Mmp,
+    Mpm,
 }
 
 pub fn build_configuration(
@@ -188,8 +188,8 @@ fn build_crossfeed(configuration: &mut Configuration, crossfeed: &Crossfeed) -> 
         Crossfeed::PowChuMoy => {
             add_crossfeed_config(configuration, POWCHUMOY)?;
         }
-        Crossfeed::Mmp => {
-            add_crossfeed_config(configuration, MMP)?;
+        Crossfeed::Mpm => {
+            add_crossfeed_config(configuration, MPM)?;
         }
     }
     Ok(())
@@ -274,11 +274,11 @@ fn create_config_file(headphone_name: &str, crossfeed: &Crossfeed) -> Result<Fil
 
 fn create_filename(headphone_name: &str, crossfeed: &Crossfeed) -> String {
     let crossfeed: &str = match crossfeed {
-        Crossfeed::None => "EQ",
-        Crossfeed::PowChuMoy => "EQ-ChuMoy",
-        Crossfeed::Mmp => "EQ-MMP",
+        Crossfeed::None => "",
+        Crossfeed::PowChuMoy => "ChuMoy",
+        Crossfeed::Mpm => "MPM",
     };
-    format!("{}-{}.yml", headphone_name.replace(' ', "_"), crossfeed)
+    format!("{}-EQ{}.yml", headphone_name.replace(' ', "_"), crossfeed)
 }
 
 fn write_lines_to_file(file: &mut File, data: String) -> Result<()> {
