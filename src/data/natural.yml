@@ -8,28 +8,28 @@ mixers:
       mute: false
       sources:
       - channel: 0
-        gain: -6
+        gain: -9.5
         inverted: false
         mute: false
     - dest: 1
       mute: false
       sources:
       - channel: 0
-        gain: -2
+        gain: -1.5
         inverted: false
         mute: false
     - dest: 2
       mute: false
       sources:
       - channel: 1
-        gain: -2
+        gain: -1.5
         inverted: false
         mute: false
     - dest: 3
       mute: false
       sources:
       - channel: 1
-        gain: -6
+        gain: -9.5
         inverted: false
         mute: false
   XF_OUT:
@@ -64,14 +64,14 @@ filters:
     type: Biquad
     parameters:
       type: Lowpass
-      freq: 700
+      freq: 650
       q: 0.5
   XF_Direct_Highshelf:
     type: Biquad
     parameters:
       type: HighshelfFO
-      freq: 950
-      gain: 2.0
+      freq: 900
+      gain: 1.5
 pipeline:
   - type: Mixer
     name: XF_IN
