@@ -63,9 +63,9 @@ I reached out to Mikhail who was so kind to contribute this implementation and a
 ```mermaid
 graph LR
 A[Left IN]-- -1.5 dB --> G[Highshelf Filter 900 Hz +1.5 dB]--> B[Left OUT]
-A -- -6 dB --> E[Lowpass Filter 650 Hz] --> D
+A -- -9.5 dB --> E[Lowpass Filter 650 Hz] --> D
 C[Right IN]-- -1.5 db -->H[Highshelf Filter 900 Hz +1.5 dB]-->D[Right OUT]
-C -- -6 dB --> F[Lowpass Filter 650 Hz] --> B
+C -- -9.5 dB --> F[Lowpass Filter 650 Hz] --> B
 ```
 
 
