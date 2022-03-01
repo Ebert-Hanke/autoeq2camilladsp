@@ -153,7 +153,12 @@ Otherwise try again and enter the relative path to your custom 'devices' file:",
 
     pub fn query_crossfeed(&mut self) -> Result<()> {
         println!();
-        let items = vec!["None", "Pow Chu Moy Crossfeed", "MPM Crossfeed"];
+        let items = vec![
+            "None",
+            "Pow Chu Moy Crossfeed",
+            "MPM Crossfeed",
+            "Natural Crossfeed",
+        ];
         let crossfeed_query = Select::with_theme(&ColorfulTheme::clitheme())
         .with_prompt(
             "Please select the type of Crossfeed you would like to include in your configuration:"
@@ -166,6 +171,7 @@ Otherwise try again and enter the relative path to your custom 'devices' file:",
             0 => Crossfeed::None,
             1 => Crossfeed::PowChuMoy,
             2 => Crossfeed::Mpm,
+            3 => Crossfeed::Natural,
             _ => Crossfeed::None,
         };
         println!();

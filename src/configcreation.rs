@@ -9,6 +9,7 @@ use std::{
 
 static POWCHUMOY: &[u8] = include_bytes!("data/pow_chu_moy.yml");
 static MPM: &[u8] = include_bytes!("data/mpm.yml");
+static NATURAL: &[u8] = include_bytes!("data/natural.yml");
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Configuration {
@@ -170,6 +171,7 @@ pub enum Crossfeed {
     None,
     PowChuMoy,
     Mpm,
+    Natural,
 }
 
 pub fn build_configuration(
@@ -190,6 +192,9 @@ fn build_crossfeed(configuration: &mut Configuration, crossfeed: &Crossfeed) -> 
         }
         Crossfeed::Mpm => {
             add_crossfeed_config(configuration, MPM)?;
+        }
+        Crossfeed::Natural => {
+            add_crossfeed_config(configuration, NATURAL)?;
         }
     }
     Ok(())
@@ -275,8 +280,9 @@ fn create_config_file(headphone_name: &str, crossfeed: &Crossfeed) -> Result<Fil
 fn create_filename(headphone_name: &str, crossfeed: &Crossfeed) -> String {
     let crossfeed: &str = match crossfeed {
         Crossfeed::None => "",
-        Crossfeed::PowChuMoy => "ChuMoy",
-        Crossfeed::Mpm => "MPM",
+        Crossfeed::PowChuMoy => "-ChuMoy",
+        Crossfeed::Mpm => "-MPM",
+        Crossfeed::Natural => "-Natural",
     };
     format!("{}-EQ{}.yml", headphone_name.replace(' ', "_"), crossfeed)
 }
