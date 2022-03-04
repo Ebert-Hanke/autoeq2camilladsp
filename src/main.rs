@@ -76,7 +76,7 @@ async fn main() -> Result<()> {
     match filterset {
         Ok(filterset) => {
             let configuration = build_configuration(filterset, &cli.crossfeed)?;
-            write_yml_file(configuration, &cli.headphone, &cli.devices)?;
+            write_yml_file(configuration, &cli.headphone, &cli.devices, &cli.crossfeed)?;
 
             progress_bar.finish_with_message(format_msg(
                 "...Your config for CamillaDSP was created successfully. Happy listening! :)",

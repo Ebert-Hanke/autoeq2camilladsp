@@ -7,7 +7,11 @@ use std::{
     io::{Read, Write},
 };
 
-#[derive(Debug, Serialize)]
+static POWCHUMOY: &[u8] = include_bytes!("data/pow_chu_moy.yml");
+static MPM: &[u8] = include_bytes!("data/mpm.yml");
+static NATURAL: &[u8] = include_bytes!("data/natural.yml");
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Configuration {
     #[serde(skip_serializing_if = "HashMap::is_empty")]
     mixers: HashMap<String, Mixer>,
@@ -73,14 +77,14 @@ pub struct MixerChannels {
     pub out: usize,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 enum Filter {
     Biquad { parameters: BiquadParameters },
     Gain { parameters: GainParameters },
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum BiquadParameters {
     // for future use
@@ -116,7 +120,7 @@ pub enum BiquadParameters {
     },
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum PeakingWidth {
     Q {
@@ -133,7 +137,7 @@ pub enum PeakingWidth {
     },
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct GainParameters {
     pub gain: f32,
     pub inverted: bool,
@@ -149,7 +153,7 @@ impl GainParameters {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 enum PipelineStep {
     Mixer { name: String },
@@ -166,6 +170,8 @@ pub enum DevicesFile {
 pub enum Crossfeed {
     None,
     PowChuMoy,
+    Mpm,
+    Natural,
 }
 
 pub fn build_configuration(
@@ -182,75 +188,25 @@ fn build_crossfeed(configuration: &mut Configuration, crossfeed: &Crossfeed) -> 
     match crossfeed {
         Crossfeed::None => (),
         Crossfeed::PowChuMoy => {
-            add_preset_mixers(configuration)?;
-            add_crossfeed_filters(configuration);
-            add_crossfeed_pipeline(configuration);
+            add_crossfeed_config(configuration, POWCHUMOY)?;
+        }
+        Crossfeed::Mpm => {
+            add_crossfeed_config(configuration, MPM)?;
+        }
+        Crossfeed::Natural => {
+            add_crossfeed_config(configuration, NATURAL)?;
         }
     }
     Ok(())
 }
 
-fn add_preset_mixers(configuration: &mut Configuration) -> Result<()> {
-    let crossfeed_mixers: HashMap<String, Mixer> =
-        serde_yaml::from_slice(include_bytes!("data/crossfeed_mixers.yml"))
-            .context("crossfeed_mixers.yml could not be serialized.")?;
-    configuration.add_mixers(crossfeed_mixers);
+fn add_crossfeed_config(configuration: &mut Configuration, config_bytes: &[u8]) -> Result<()> {
+    let mut partial_configuration: Configuration = serde_yaml::from_slice(config_bytes)
+        .context("Partial configuration could not be serialized.")?;
+    configuration.add_mixers(partial_configuration.mixers);
+    configuration.add_filters(partial_configuration.filters);
+    configuration.add_pipeline_steps(&mut partial_configuration.pipeline);
     Ok(())
-}
-
-fn add_crossfeed_filters(configuration: &mut Configuration) {
-    let mut crossfeed_filters = BTreeMap::new();
-    crossfeed_filters.insert(
-        "XF_Cross_Lowpass".to_string(),
-        Filter::Biquad {
-            parameters: BiquadParameters::Lowpass {
-                freq: 700.0,
-                q: 0.5,
-            },
-        },
-    );
-    crossfeed_filters.insert(
-        "XF_Direct_HighShelf".to_string(),
-        Filter::Biquad {
-            parameters: BiquadParameters::HighshelfFO {
-                freq: 950.0,
-                gain: 2.0,
-            },
-        },
-    );
-    configuration.add_filters(crossfeed_filters);
-}
-
-macro_rules! vec_of_strings {
-    ($($x:expr),*) => (vec![$($x.to_string()),*]);
-}
-
-fn add_crossfeed_pipeline(configuration: &mut Configuration) {
-    let mut crossfeed_pipeline = vec![
-        PipelineStep::Mixer {
-            name: "XF_IN".to_string(),
-        },
-        PipelineStep::Filter {
-            channel: 0,
-            names: vec_of_strings!["XF_Cross_Lowpass"],
-        },
-        PipelineStep::Filter {
-            channel: 1,
-            names: vec_of_strings!["XF_Direct_HighShelf"],
-        },
-        PipelineStep::Filter {
-            channel: 2,
-            names: vec_of_strings!["XF_Direct_HighShelf"],
-        },
-        PipelineStep::Filter {
-            channel: 3,
-            names: vec_of_strings!["XF_Cross_Lowpass"],
-        },
-        PipelineStep::Mixer {
-            name: "XF_OUT".to_string(),
-        },
-    ];
-    configuration.add_pipeline_steps(&mut crossfeed_pipeline);
 }
 
 fn add_correction_eq_filtes(configuration: &mut Configuration, data: CorrectionFilterSet) {
@@ -286,9 +242,10 @@ pub fn write_yml_file(
     configuration: Configuration,
     headphone_name: &str,
     devices: &DevicesFile,
+    crossfeed: &Crossfeed,
 ) -> Result<()> {
     let devices_config = get_devices(devices)?;
-    let mut config_file = create_config_file(headphone_name)?;
+    let mut config_file = create_config_file(headphone_name, crossfeed)?;
     write_lines_to_file(
         &mut config_file,
         include_str!("data/header.yml").to_string(),
@@ -313,11 +270,21 @@ fn get_devices(devices: &DevicesFile) -> Result<String> {
     Ok(devices_config)
 }
 
-fn create_config_file(headphone_name: &str) -> Result<File> {
-    let filename = format!("{}-EQ.yml", headphone_name.replace(" ", "_"));
+fn create_config_file(headphone_name: &str, crossfeed: &Crossfeed) -> Result<File> {
+    let filename = create_filename(headphone_name, crossfeed);
     let mut config_file = File::create(filename).context("Could not create configuration file.")?;
     writeln!(config_file, "---").context("Could not write to configuration file.")?;
     Ok(config_file)
+}
+
+fn create_filename(headphone_name: &str, crossfeed: &Crossfeed) -> String {
+    let crossfeed: &str = match crossfeed {
+        Crossfeed::None => "",
+        Crossfeed::PowChuMoy => "-ChuMoy",
+        Crossfeed::Mpm => "-MPM",
+        Crossfeed::Natural => "-Natural",
+    };
+    format!("{}-EQ{}.yml", headphone_name.replace(' ', "_"), crossfeed)
 }
 
 fn write_lines_to_file(file: &mut File, data: String) -> Result<()> {
