@@ -129,7 +129,6 @@ async fn create_filterset(
         .await?
         .text()
         .await?;
-    println!("{:?}", eq_file);
     let mut data = eq_file.lines();
     let preamp_gain = parse_preamp_gain(&mut data)?;
     let mut filterset = CorrectionFilterSet::new(preamp_gain);
