@@ -8,7 +8,9 @@ If you start the tool with no arguments from the command line with `autoeq2camil
 
 ## Non-Interactive Mode
 To use the tool in other contexts e.g. a music player like `moOde`, there are some commands which will enable you to do so.  
-If you start the tool with arguments, it will be run in non-interactive mode. To get a list of all available commands and options run `autoeq2camilladsp -h`.
+
+If you start the tool with arguments, it will be run in non-interactive mode.  
+To get a list of all available commands and options run `autoeq2camilladsp -h`.
 
 ### Available Commands
 #### init
@@ -19,11 +21,11 @@ This will get the full list of entries from the AutoEq repository and output it 
 "autoeqList": [
     {
       "name": "onkyo ie-fc300",
-      "link": "/jaakkopasanen/AutoEq/blob/master/results/referenceaudioanalyzer/referenceaudioanalyzer_siec_harman_in-ear_2019v2/Onkyo%20IE-FC300"
+      "link": "/jaakkopasanen/AutoEq/blob/master/results/referenceaudioanalyzer/referenceaudioanalyzer_siec_harman_in-ear_2019v2/Onkyo%20IE-FC300.txt"
     },
     {
       "name": "tozo nc7",
-      "link": "/jaakkopasanen/AutoEq/blob/master/results/rtings/rtings_harman_in-ear_2019v2/TOZO%20NC7"
+      "link": "/jaakkopasanen/AutoEq/blob/master/results/rtings/rtings_harman_in-ear_2019v2/TOZO%20NC7.txt"
     },
 ],
 "crossfeedPresets": [
