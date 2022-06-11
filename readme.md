@@ -16,6 +16,12 @@ To get a list of all available commands and options run `autoeq2camilladsp -h`.
 #### init
 This will get the full list of entries from the AutoEq repository and output it to the terminal as JSON. It also includes a list of all the available presets.
 
+``` shell
+autoeq2camilladsp init
+```
+
+The resultin JSON output will have this structure:  
+
 ``` json
 {
 "autoeqList": [
