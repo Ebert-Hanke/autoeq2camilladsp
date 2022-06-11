@@ -168,7 +168,7 @@ pub enum DevicesFile {
     Custom(String),
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum Crossfeed {
     None,
     PowChuMoy,

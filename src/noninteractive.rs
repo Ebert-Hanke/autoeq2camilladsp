@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::configcreation::Crossfeed;
 use crate::scraping::scrape_links;
@@ -16,8 +16,10 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
-    /// Create Headphone List a JSON file
+    /// output List of AutoEq entries and Crossfeed preset options as JSON
     Init,
+    /// create a config file based on the provided selection
+    Create { input_json: String },
 }
 
 #[derive(Serialize)]
@@ -41,7 +43,13 @@ impl OutputJson {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Deserialize)]
+struct InputJson {
+    headphone: Headphone,
+    crossfeed: Crossfeed,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 struct Headphone {
     name: String,
     link: String,
@@ -61,6 +69,10 @@ pub async fn noninteractive_mode(client: &reqwest::Client, config: &Config) -> R
         match input {
             Commands::Init => {
                 create_json(client, config).await?;
+            }
+            Commands::Create { input_json } => {
+                let input: InputJson = serde_json::from_str(&input_json)?;
+                println!("{:#?}", input);
             }
         }
     }
