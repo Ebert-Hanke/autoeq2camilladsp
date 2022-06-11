@@ -25,7 +25,6 @@ This will get the full list of entries from the AutoEq repository and output it 
       "name": "tozo nc7",
       "link": "/jaakkopasanen/AutoEq/blob/master/results/rtings/rtings_harman_in-ear_2019v2/TOZO%20NC7"
     },
-    // ...
 ],
 "crossfeedPresets" [
     "None",
