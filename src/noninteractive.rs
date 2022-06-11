@@ -2,8 +2,8 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 use serde::{Deserialize, Serialize};
 
-use crate::configcreation::Crossfeed;
-use crate::scraping::scrape_links;
+use crate::configcreation::{build_configuration, write_yml_file, Crossfeed, DevicesFile};
+use crate::scraping::{parse_filters, parse_preamp_gain, scrape_links, CorrectionFilterSet};
 use crate::{CliMode, Config};
 
 #[derive(Debug, Parser)]
@@ -68,26 +68,25 @@ pub async fn noninteractive_mode(client: &reqwest::Client, config: &Config) -> R
     if let Some(input) = cli.command {
         match input {
             Commands::Init => {
-                create_json(client, config).await?;
+                create_json_output(client, config).await?;
             }
             Commands::Create { input_json } => {
                 let input: InputJson = serde_json::from_str(&input_json)?;
-                println!("{:#?}", input);
+                create_config(client, config, input).await?;
             }
         }
     }
     Ok(())
 }
 
-async fn create_json(client: &reqwest::Client, config: &Config) -> Result<()> {
+async fn create_json_output(client: &reqwest::Client, config: &Config) -> Result<()> {
     let database_result_list = scrape_links(client, &config.repo_url()).await?;
 
     let mut json = OutputJson::new();
-
     for (key, val) in database_result_list.iter() {
         json.autoeq_list.push(Headphone {
             name: key.to_owned(),
-            link: val.to_owned(),
+            link: format!("{}.txt", val.to_owned()),
         });
     }
 
@@ -96,4 +95,44 @@ async fn create_json(client: &reqwest::Client, config: &Config) -> Result<()> {
     println!("{}", json_out);
 
     Ok(())
+}
+
+async fn create_config(client: &reqwest::Client, config: &Config, input: InputJson) -> Result<()> {
+    let filterset = create_filterset(client, config, &input.headphone.link).await;
+
+    match filterset {
+        Ok(filterset) => {
+            let configuration = build_configuration(filterset, &input.crossfeed)?;
+            write_yml_file(
+                configuration,
+                &input.headphone.name,
+                &DevicesFile::Default,
+                &input.crossfeed,
+            )?;
+        }
+        Err(error) => {
+            println!("...Something went wrong unfortunately :(\n{}", error);
+        }
+    }
+
+    Ok(())
+}
+
+async fn create_filterset(
+    client: &reqwest::Client,
+    config: &Config,
+    link: &str,
+) -> Result<CorrectionFilterSet> {
+    let eq_file = client
+        .get(config.raw_eq_url(link))
+        .send()
+        .await?
+        .text()
+        .await?;
+    println!("{:?}", eq_file);
+    let mut data = eq_file.lines();
+    let preamp_gain = parse_preamp_gain(&mut data)?;
+    let mut filterset = CorrectionFilterSet::new(preamp_gain);
+    parse_filters(&mut data, &mut filterset)?;
+    Ok(filterset)
 }

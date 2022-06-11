@@ -105,7 +105,7 @@ fn pick_url(link_list: HashMap<String, String>, query: &str) -> Option<Link> {
         .map(|(k, v)| Link::new(k, v))
 }
 
-fn parse_preamp_gain(lines: &mut std::str::Lines) -> Result<f32> {
+pub fn parse_preamp_gain(lines: &mut std::str::Lines) -> Result<f32> {
     let gain = lines
         .next()
         .ok_or_else(|| anyhow!("Not enough lines."))?
@@ -116,7 +116,10 @@ fn parse_preamp_gain(lines: &mut std::str::Lines) -> Result<f32> {
     Ok(gain)
 }
 
-fn parse_filters(lines: &mut std::str::Lines, filterset: &mut CorrectionFilterSet) -> Result<()> {
+pub fn parse_filters(
+    lines: &mut std::str::Lines,
+    filterset: &mut CorrectionFilterSet,
+) -> Result<()> {
     for line in lines.skip(0) {
         let eq = parse_filter_line(line)?;
         filterset.eq_bands.push(eq);
