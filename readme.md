@@ -39,7 +39,7 @@ This will get the full list of entries from the AutoEq repository and output it 
 Create a config file based on the options selected in the provided JSON input like so:  
 
 ``` shell
-autoeq2camilladsp create '{"headphone":"{"name":"some headphone", "link":"some link"}, "crossfeed":"Mpm"}
+autoeq2camilladsp create '{"headphone":"{"name":"some headphone", "link":"some link"}, "crossfeed":"Mpm"}'
 ```
 
 Make sure to only use values which exist in the output created with the `init` command.
