@@ -24,13 +24,14 @@ enum Commands {
 struct OutputJson {
     #[serde(rename(serialize = "autoeqList"))]
     autoeq_list: Vec<Headphone>,
-    crossfeed: Vec<String>,
+    #[serde(rename(serialize = "crossfeedPresets"))]
+    crossfeed_presets: Vec<String>,
 }
 impl OutputJson {
     fn new() -> OutputJson {
         OutputJson {
             autoeq_list: Vec::new(),
-            crossfeed: vec![
+            crossfeed_presets: vec![
                 Crossfeed::None.to_string(),
                 Crossfeed::PowChuMoy.to_string(),
                 Crossfeed::Mpm.to_string(),
