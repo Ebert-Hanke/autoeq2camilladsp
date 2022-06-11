@@ -35,6 +35,15 @@ This will get the full list of entries from the AutoEq repository and output it 
 }
 ```
 
+### create
+Create a config file based on the options selected in the provided JSON input like so:  
+
+``` shell
+autoeq2camilladsp create '{"headphone":"{"name":"some headphone", "link":"some link"}, "crossfeed":"Mpm"}
+```
+
+Make sure to only use values which exist in the output created with the `init` command.
+    
 ## Devices Section
 The CamillaDSP configuration starts with a `devices` section which will be specific to the equipment you are using. In order to include this section just put it in a `.yml` file and it can be read and added to your configuration.  
 Please refer to the [CamillaDSP Readme](https://github.com/HEnquist/camilladsp#configuration) for more information about this section.
