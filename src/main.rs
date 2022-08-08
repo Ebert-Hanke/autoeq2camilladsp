@@ -60,6 +60,7 @@ async fn run() -> Result<()> {
 
     Ok(())
 }
+
 fn main() {
     let exitstatus = run();
     match exitstatus {

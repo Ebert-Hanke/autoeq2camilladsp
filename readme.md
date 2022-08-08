@@ -120,5 +120,3 @@ C -- -9.5 dB --> F[Lowpass Filter 650 Hz] --> B
 ```
 
 This preset is roughly modeled after some publications by [Jan Meier](https://www.meier-audio.com/crossfeed.html) and is still work in progress.
-
-
