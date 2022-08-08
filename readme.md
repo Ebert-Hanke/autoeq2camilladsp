@@ -12,6 +12,10 @@ To use the tool in other contexts e.g. a music player like `moOde`, there are so
 If you start the tool with arguments, it will be run in non-interactive mode.  
 To get a list of all available commands and options run `autoeq2camilladsp -h`.
 
+For the moment there the command exits with just two very basic exit codes:  
+- 0 for everything went fine
+- 1 as a catchall for all errors
+
 ### Available Commands
 #### init
 This will get the full list of entries from the AutoEq repository and output it to the terminal as JSON. It also includes a list of all the available presets.
@@ -107,8 +111,6 @@ This preset is based on research and "reverse engineering" done by Mikhail Nagan
 I reached out to Mikhail who was so kind to contribute this implementation and also provide a lot of insight to my hobbyist research on the crossfeed topic in general. Thanks! 
 
 ### Natural Crossfeed
-
-*work in progress*
 ```mermaid
 graph LR
 A[Left IN]-- -1.5 dB --> G[Highshelf Filter 900 Hz +1.5 dB]--> B[Left OUT]
@@ -117,5 +119,6 @@ C[Right IN]-- -1.5 db -->H[Highshelf Filter 900 Hz +1.5 dB]-->D[Right OUT]
 C -- -9.5 dB --> F[Lowpass Filter 650 Hz] --> B
 ```
 
+This preset is roughly modeled after some publications by [Jan Meier](https://www.meier-audio.com/crossfeed.html) and is still work in progress.
 
 
