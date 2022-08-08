@@ -86,7 +86,7 @@ async fn create_json_output(client: &reqwest::Client, config: &Config) -> Result
     for (key, val) in database_result_list.iter() {
         json.autoeq_list.push(Headphone {
             name: key.to_owned(),
-            link: format!("{}.txt", val.to_owned()),
+            link: format!("{}.txt", val),
         });
     }
 
