@@ -3,6 +3,59 @@
 This is a simple CLI tool to easily create a configuration file for your Headphones or IEMs using Headphone-Correction-Data from Jaakko Pasanen's [AutoEq](https://github.com/jaakkopasanen/AutoEq) to use with Henrik Enquist's [CamillaDSP](https://github.com/HEnquist/camilladsp). `CamillaDSP` is e.g included in [moOde audio player](https://github.com/moode-player/moode).  
 Using it stand alone on all major systems is well documented in [Processing audio](https://github.com/HEnquist/camilladsp#processing-audio) of the documentation.
 
+## Interactive Mode 
+If you start the tool with no arguments from the command line with `autoeq2camilladsp` you will enter interactive mode which will lead you through the progress of creating your configuration.
+
+## Non-Interactive Mode
+To use the tool in other contexts e.g. a music player like `moOde`, there are some commands which will enable you to do so.  
+
+If you start the tool with arguments, it will be run in non-interactive mode.  
+To get a list of all available commands and options run `autoeq2camilladsp -h`.
+
+For the moment there the command exits with just two very basic exit codes:  
+- 0 for everything went fine
+- 1 as a catchall for all errors
+
+### Available Commands
+#### init
+This will get the full list of entries from the AutoEq repository and output it to the terminal as JSON. It also includes a list of all the available presets.
+
+``` shell
+autoeq2camilladsp init
+```
+
+The resultin JSON output will have this structure:  
+
+``` json
+{
+"autoeqList": [
+    {
+      "name": "onkyo ie-fc300",
+      "link": "/jaakkopasanen/AutoEq/blob/master/results/referenceaudioanalyzer/referenceaudioanalyzer_siec_harman_in-ear_2019v2/Onkyo%20IE-FC300.txt"
+    },
+    {
+      "name": "tozo nc7",
+      "link": "/jaakkopasanen/AutoEq/blob/master/results/rtings/rtings_harman_in-ear_2019v2/TOZO%20NC7.txt"
+    },
+],
+"crossfeedPresets": [
+    "None",
+    "PowChuMoy",
+    "Mpm",
+    "Natural"
+]
+}
+```
+
+### create
+Create a config file based on the options selected in the provided JSON input like so:  
+
+``` shell
+autoeq2camilladsp create '{"headphone":"{"name":"some headphone", "link":"some link"}, "crossfeed":"Mpm"}'
+```
+
+Make sure to only use values which exist in the output created with the `init` command.
+    
 ## Devices Section
 The CamillaDSP configuration starts with a `devices` section which will be specific to the equipment you are using. In order to include this section just put it in a `.yml` file and it can be read and added to your configuration.  
 Please refer to the [CamillaDSP Readme](https://github.com/HEnquist/camilladsp#configuration) for more information about this section.
@@ -58,8 +111,6 @@ This preset is based on research and "reverse engineering" done by Mikhail Nagan
 I reached out to Mikhail who was so kind to contribute this implementation and also provide a lot of insight to my hobbyist research on the crossfeed topic in general. Thanks! 
 
 ### Natural Crossfeed
-
-*work in progress*
 ```mermaid
 graph LR
 A[Left IN]-- -1.5 dB --> G[Highshelf Filter 900 Hz +1.5 dB]--> B[Left OUT]
@@ -68,5 +119,4 @@ C[Right IN]-- -1.5 db -->H[Highshelf Filter 900 Hz +1.5 dB]-->D[Right OUT]
 C -- -9.5 dB --> F[Lowpass Filter 650 Hz] --> B
 ```
 
-
-
+This preset is roughly modeled after some publications by [Jan Meier](https://www.meier-audio.com/crossfeed.html) and is still work in progress.

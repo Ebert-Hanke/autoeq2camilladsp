@@ -1,8 +1,10 @@
 use crate::scraping::CorrectionFilterSet;
+
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, HashMap},
+    fmt,
     fs::File,
     io::{Read, Write},
 };
@@ -166,12 +168,18 @@ pub enum DevicesFile {
     Custom(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum Crossfeed {
     None,
     PowChuMoy,
     Mpm,
     Natural,
+}
+
+impl fmt::Display for Crossfeed {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 pub fn build_configuration(
