@@ -10,6 +10,10 @@ use serde::Deserialize;
 use interactive::interactive_mode;
 use noninteractive::{cli_mode_check, noninteractive_mode};
 
+// basic exit codes
+const EXIT_ERROR: i32 = 1; // catchall for errors
+const EXIT_OK: i32 = 0; // all fine
+
 pub enum CliMode {
     Interactive,
     NonInteractive,
@@ -40,7 +44,7 @@ impl Config {
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn run() -> Result<()> {
     // setup
     let client = reqwest::Client::builder()
         .user_agent("AutoEq2CamillaDSP")
@@ -55,4 +59,15 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+fn main() {
+    let exitstatus = run();
+    match exitstatus {
+        Err(_) => {
+            std::process::exit(EXIT_ERROR);
+        }
+        Ok(_) => {
+            std::process::exit(EXIT_OK);
+        }
+    }
 }

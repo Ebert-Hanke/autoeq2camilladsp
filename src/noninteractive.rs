@@ -109,13 +109,13 @@ async fn create_config(client: &reqwest::Client, config: &Config, input: InputJs
                 &DevicesFile::Default,
                 &input.crossfeed,
             )?;
+            Ok(())
         }
         Err(error) => {
             println!("...Something went wrong unfortunately :(\n{}", error);
+            Err(error)
         }
     }
-
-    Ok(())
 }
 
 async fn create_filterset(
