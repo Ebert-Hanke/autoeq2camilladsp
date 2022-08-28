@@ -1,6 +1,6 @@
 [package]
 name = "autoeq2camilladsp"
-version = "0.4.0"
+version = "0.5.1"
 authors = ["Micha Ebert-Hanke <michael@ebert-hanke.de>"]
 description = "a simple tool to generate a CamillaDSP config based on correction data from the AutoEq repository"
 readme = "README.md"
@@ -15,12 +15,12 @@ path = "src/main.rs"
 [dependencies]
 anyhow = "1.0"
 console = "0.15"
-clap = { version = "3.1.18", features = ["derive"] } 
-dialoguer = {git = "https://github.com/mitsuhiko/dialoguer", features = ["fuzzy-select"]}
-indicatif = "0.16"
+clap = { version = "3.2", features = ["derive"] } 
+dialoguer = { version = "0.10", features = ["fuzzy-select"]}
+indicatif = "0.17"
 reqwest = "0.11"
 scraper = "0.13"
-serde = { version = "1.0", features = ["derive"]}
-serde_yaml = "0.8"
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.9"
 serde_json = "1.0"
 tokio = { version = "1", features = ["full"] }
