@@ -4,7 +4,7 @@ This is a simple CLI tool to easily create a configuration file for your Headpho
 Using it stand alone on all major systems is well documented in [Processing audio](https://github.com/HEnquist/camilladsp#processing-audio) of the documentation.
 
 ## Interactive Mode 
-If you start the tool with no arguments from the command line with `autoeq2camilladsp` you will enter interactive mode which will lead you through the progress of creating your configuration.
+If you start the tool with no arguments from the command line with `autoeq2camilladsp` you will enter interactive mode which will lead you through the process of creating your configuration.
 
 ## Non-Interactive Mode
 To use the tool in other contexts e.g. a music player like `moOde`, there are some commands which will enable you to do so.  
@@ -12,7 +12,7 @@ To use the tool in other contexts e.g. a music player like `moOde`, there are so
 If you start the tool with arguments, it will be run in non-interactive mode.  
 To get a list of all available commands and options run `autoeq2camilladsp -h`.
 
-For the moment there the command exits with just two very basic exit codes:  
+At the moment the command exits with just two very basic exit codes:  
 - 0 for everything went fine
 - 1 as a catchall for all errors
 
