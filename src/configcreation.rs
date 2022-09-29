@@ -308,9 +308,7 @@ fn write_lines_to_file(file: &mut File, data: String) -> Result<()> {
 fn serialize_and_write_yaml(file: &mut File, configuration: &Configuration) -> Result<()> {
     let serialized_yaml = serde_yaml::to_string(configuration)
         .context("The ParametricEq filter settings could not be serialized to yaml.")?
-        .into_bytes()
-        // split of the "---" at the beginning of yml file
-        .split_off(4);
+        .into_bytes();
     file.write_all(&serialized_yaml)
         .context("Unaible to write serialized config to file.")?;
     Ok(())
