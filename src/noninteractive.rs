@@ -86,7 +86,7 @@ async fn create_json_output(client: &reqwest::Client, config: &Config) -> Result
     for (key, val) in database_result_list.iter() {
         json.autoeq_list.push(Headphone {
             name: key.to_owned(),
-            link: format!("{}.txt", val),
+            link: val.to_owned(),
         });
     }
 
@@ -124,7 +124,7 @@ async fn create_filterset(
     link: &str,
 ) -> Result<CorrectionFilterSet> {
     let eq_file = client
-        .get(config.raw_eq_url(link))
+        .get(config.headphone_url(link))
         .send()
         .await?
         .text()
