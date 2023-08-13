@@ -4,7 +4,6 @@ use serde::Serialize;
 use std::collections::HashMap;
 
 use crate::configcreation::{BiquadParameters, PeakingWidth};
-use crate::Config;
 
 #[derive(Debug, Serialize)]
 pub struct CorrectionFilterSet {
@@ -55,7 +54,7 @@ fn filter_links(html: Html) -> HashMap<String, String> {
                 .trim()
                 .replace("&amp;", "&")
                 .to_string();
-            let link_url = url.trim().to_string();
+            let link_url = url.trim().replace(['\\', '\"'], "").to_string();
             if !link_text.len() > 100
                 && !link_text.contains('<')
                 && !link_text.contains('>')
@@ -75,34 +74,15 @@ pub fn filter_link_list(link_list: &HashMap<String, String>, query: &str) -> Opt
 }
 
 pub async fn scrape_eq_settings(
-    link_list: HashMap<String, String>,
+    url: &str,
     client: &reqwest::Client,
-    config: &Config,
 ) -> Result<CorrectionFilterSet> {
-    let eq_link = pick_url(link_list, &config.parametric_eq_query);
-    match eq_link {
-        Some(link) => {
-            let eq_file = client
-                .get(config.raw_eq_url(&link.url))
-                .send()
-                .await?
-                .text()
-                .await?;
-            let mut data = eq_file.lines();
-            let preamp_gain = parse_preamp_gain(&mut data)?;
-            let mut filterset = CorrectionFilterSet::new(preamp_gain);
-            parse_filters(&mut data, &mut filterset)?;
-            Ok(filterset)
-        }
-        None => Err(anyhow!("The eq data could not be parsed.")),
-    }
-}
-
-fn pick_url(link_list: HashMap<String, String>, query: &str) -> Option<Link> {
-    link_list
-        .into_iter()
-        .find(|(k, _v)| k.to_lowercase().contains(&query.to_lowercase()))
-        .map(|(k, v)| Link::new(k, v))
+    let eq_file = client.get(url).send().await?.text().await?;
+    let mut data = eq_file.lines();
+    let preamp_gain = parse_preamp_gain(&mut data)?;
+    let mut filterset = CorrectionFilterSet::new(preamp_gain);
+    parse_filters(&mut data, &mut filterset)?;
+    Ok(filterset)
 }
 
 pub fn parse_preamp_gain(lines: &mut std::str::Lines) -> Result<f32> {
