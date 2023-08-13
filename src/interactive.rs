@@ -20,8 +20,9 @@ pub async fn interactive_mode(client: &reqwest::Client, config: &Config) -> Resu
     cli.select_headphone(&database_result_list)?;
 
     progress_bar.set_message(format_msg("Loading EQ settings for {}...", &cli));
-    let headphone_query_link_list =
-        scrape_links(client, &config.headphone_url(&cli.headphone_url)).await?;
+
+    scrape_links(client, &config.headphone_url(&cli.headphone_url)).await?;
+
     progress_bar.finish_with_message(format_msg("...EQ settings for {} loaded.", &cli));
 
     cli.query_custom_devices()?;
@@ -33,8 +34,7 @@ pub async fn interactive_mode(client: &reqwest::Client, config: &Config) -> Resu
         &cli,
     ));
 
-    let filterset = scrape_eq_settings(headphone_query_link_list, client, config).await;
-
+    let filterset = scrape_eq_settings(&config.headphone_url(&cli.headphone_url), client).await;
     match filterset {
         Ok(filterset) => {
             let configuration = build_configuration(filterset, &cli.crossfeed)?;

@@ -24,7 +24,7 @@ pub struct Config {
     github_url: String,
     github_raw: String,
     repo_url: String,
-    parametric_eq_query: String,
+    parametric_eq: String,
 }
 impl Config {
     fn load() -> Result<Self> {
@@ -36,7 +36,14 @@ impl Config {
         format!("{}{}", self.github_url, self.repo_url)
     }
     fn headphone_url(&self, headphone_result: &str) -> String {
-        format!("{}{}", self.github_url, headphone_result)
+        let headphone = headphone_result.split('/').last().unwrap();
+        format!(
+            "{}{}/{}%20{}",
+            self.github_raw,
+            headphone_result.replace("/blob", ""),
+            headphone,
+            self.parametric_eq,
+        )
     }
     pub fn raw_eq_url(&self, eq_url: &str) -> String {
         format!("{}{}", self.github_raw, eq_url.replace("/blob", ""))
